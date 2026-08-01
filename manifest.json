@@ -1,14 +1,14 @@
 {
   "name": "Horse Breeding Tracker",
   "short_name": "Horse Breeding",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/horse-breeding-tracker/index.html",
+  "scope": "/horse-breeding-tracker/",
   "display": "standalone",
   "background_color": "#eef8ea",
   "theme_color": "#eef8ea",
   "icons": [
     {
-      "src": "./apple-touch-icon.png",
+      "src": "/horse-breeding-tracker/apple-touch-icon.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
