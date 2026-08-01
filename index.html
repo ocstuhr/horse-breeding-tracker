@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Horse Breeding" />
+    <meta name="application-name" content="Horse Breeding" />
+    <meta name="theme-color" content="#f4efe8" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>Horse Breeding Tracker</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Equine record keeping</p>
+          <h1>Horse Breeding Tracker</h1>
+          <p class="subtitle">
+            Select a dam to open her record, or add a new breeding record from the main form.
+          </p>
+        </div>
+      </header>
+
+      <section class="panel" id="mainView">
+        <div class="section-heading">
+          <h2>Dams</h2>
+          <button id="newRecordButton" type="button" class="secondary">New record</button>
+        </div>
+        <div id="damList" class="records-list"></div>
+      </section>
+
+      <section class="panel" id="detailView" hidden>
+        <div class="section-heading">
+          <button id="backToMainButton" type="button" class="secondary">← Back to dams</button>
+          <button id="clearDataButton" type="button" class="secondary">Clear all</button>
+        </div>
+        <div id="activeRecordContent"></div>
+      </section>
+
+      <section class="panel" id="damYearsView" hidden>
+        <div class="section-heading">
+          <button id="backToDamsButton" type="button" class="secondary">← Back to dams</button>
+          <button id="clearDataButtonTwo" type="button" class="secondary">Clear all</button>
+        </div>
+        <h2 id="damYearsHeading">Breeding years</h2>
+        <div id="damYearsList" class="records-list"></div>
+      </section>
+
+      <section class="panel" id="formView" hidden>
+        <div class="section-heading">
+          <h2 id="formHeading">Add breeding record</h2>
+          <button id="goToMainButton" type="button" class="secondary">Go to main page</button>
+        </div>
+        <form id="breeding-form">
+          <div class="form-grid">
+            <label>
+              Breeding year
+              <input id="breedingYearInput" name="breedingYear" type="number" min="1900" max="2100" placeholder="2026" />
+            </label>
+            <div class="inline-fields">
+              <label>
+                Sire
+                <input id="sireInput" name="sire" type="text" placeholder="Sire name" required />
+              </label>
+              <label>
+                Dam
+                <input id="damInput" name="dam" type="text" placeholder="Dam name" required />
+              </label>
+            </div>
+            <label>
+              Breeding date 1
+              <input id="breedingDate1Input" name="breedingDate1" type="date" />
+            </label>
+            <label>
+              Breeding date 2
+              <input id="breedingDate2Input" name="breedingDate2" type="date" />
+            </label>
+            <label>
+              Breeding date 3
+              <input id="breedingDate3Input" name="breedingDate3" type="date" />
+            </label>
+            <label>
+              Confirmed in foal date
+              <input id="confirmedInFoalDateInput" name="confirmedInFoalDate" type="date" />
+            </label>
+            <label>
+              Status
+              <select id="statusSelect" name="status">
+                <option value="Open">Open</option>
+                <option value="Checked in foal">Checked in foal</option>
+              </select>
+            </label>
+            <label>
+              Expected foaling date
+              <div id="foalingDateDisplay" class="display-box">—</div>
+            </label>
+            <label>
+              Actual foaling date
+              <input id="actualFoalingDateInput" name="actualFoalingDate" type="date" />
+            </label>
+          </div>
+
+          <div class="shot-section">
+            <div class="section-heading">
+              <h3>Stallion station details</h3>
+              <p>Record where the stallion is stationed and how collections are scheduled.</p>
+            </div>
+            <div class="form-grid">
+              <label>
+                Station name
+                <input id="stationNameInput" name="stationName" type="text" placeholder="Stallion station" />
+              </label>
+              <label>
+                Phone number
+                <input id="stationPhoneInput" name="stationPhone" type="tel" placeholder="(555) 123-4567" />
+              </label>
+              <label>
+                Collection schedule
+                <select id="collectionScheduleInput" name="collectionSchedule">
+                  <option value="">Select schedule</option>
+                  <option value="Every other day">Every other day</option>
+                  <option value="M-W-F">M-W-F</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="shot-section">
+            <div class="section-heading">
+              <h3>Shot record</h3>
+              <p>Record vaccinations or treatments as the mare progresses.</p>
+            </div>
+            <div class="shot-form">
+              <label>
+                Shot date
+                <input id="shotDateInput" type="date" />
+              </label>
+              <label>
+                Shot / treatment
+                <input id="shotNameInput" type="text" placeholder="e.g. Rhino 3" />
+              </label>
+              <button id="addShotButton" type="button" class="secondary">Add shot</button>
+            </div>
+            <ul id="shotList" class="shot-list"></ul>
+          </div>
+
+          <div class="shot-section">
+            <div class="section-heading">
+              <h3>Notes</h3>
+              <p>Record general observations or reminders for this breeding record.</p>
+            </div>
+            <label>
+              Notes
+              <textarea id="notesInput" name="notes" rows="5" placeholder="Add any notes here..."></textarea>
+            </label>
+          </div>
+
+          <button id="submitButton" type="submit" class="primary">Save breeding record</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
