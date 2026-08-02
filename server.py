@@ -9,7 +9,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-DB_PATH = Path(os.environ.get("DB_PATH", str(ROOT / "data" / "tracker.db")))
+DEFAULT_DB_PATH = ROOT / "data" / "tracker.db"
+DB_PATH = Path(os.environ.get("DB_PATH", str(DEFAULT_DB_PATH)))
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 PORT = int(os.environ.get("PORT", "3000"))
 

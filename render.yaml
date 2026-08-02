@@ -10,5 +10,3 @@ services:
         value: 3.12.0
       - key: SESSION_SECRET
         value: change-me-in-render
-      - key: DB_PATH
-        value: /var/data/tracker.db
