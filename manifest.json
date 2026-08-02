@@ -1,7 +1,7 @@
 {
   "name": "Horse Breeding Tracker",
   "short_name": "Horse Breeding",
-  "start_url": "/horse-breeding-tracker/index.html",
+  "start_url": "/horse-breeding-tracker/",
   "scope": "/horse-breeding-tracker/",
   "display": "standalone",
   "background_color": "#eef8ea",
