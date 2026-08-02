@@ -390,6 +390,7 @@ function populateForm(record) {
 }
 
 function showAuthView() {
+  document.body.classList.add("landing-force-active");
   signinPanel.hidden = false;
   mainView.hidden = true;
   detailView.hidden = true;
@@ -403,11 +404,16 @@ function showMainView() {
     return;
   }
 
+  document.body.classList.remove("landing-force-active");
   signinPanel.hidden = true;
   mainView.hidden = false;
   detailView.hidden = true;
   formView.hidden = true;
   damYearsView.hidden = true;
+  mainView.style.display = "block";
+  detailView.style.display = "none";
+  formView.style.display = "none";
+  damYearsView.style.display = "none";
 }
 
 function forceLandingView() {

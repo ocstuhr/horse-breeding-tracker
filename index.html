@@ -80,7 +80,7 @@
         </div>
       </section>
 
-      <section class="panel" id="mainView" hidden>
+      <section class="panel" id="mainView">
         <div class="section-heading">
           <h2>Dams</h2>
           <button id="newRecordButton" type="button" class="secondary">New record</button>
@@ -238,6 +238,55 @@
         if (formView) formView.hidden = true;
         if (damYearsView) damYearsView.hidden = true;
         document.body.classList.add("landing-force-active");
+      })();
+
+      (function installAuthFallback() {
+        const showDashboard = () => {
+          const signinPanel = document.getElementById("signinPanel");
+          const mainView = document.getElementById("mainView");
+          const detailView = document.getElementById("detailView");
+          const formView = document.getElementById("formView");
+          const damYearsView = document.getElementById("damYearsView");
+
+          if (!signinPanel || !mainView) {
+            return;
+          }
+
+          document.body.classList.remove("landing-force-active");
+          signinPanel.hidden = true;
+          mainView.hidden = false;
+          if (detailView) detailView.hidden = true;
+          if (formView) formView.hidden = true;
+          if (damYearsView) damYearsView.hidden = true;
+          mainView.style.display = "block";
+          if (detailView) detailView.style.display = "none";
+          if (formView) formView.style.display = "none";
+          if (damYearsView) damYearsView.style.display = "none";
+        };
+
+        const attach = () => {
+          const loginButton = document.getElementById("loginButton");
+          const registerButton = document.getElementById("registerButton");
+          const logoutButton = document.getElementById("logoutButton");
+
+          [loginButton, registerButton].forEach((button) => {
+            if (button) {
+              button.addEventListener("click", () => window.setTimeout(showDashboard, 150));
+            }
+          });
+
+          if (logoutButton) {
+            logoutButton.addEventListener("click", () => {
+              document.body.classList.add("landing-force-active");
+            });
+          }
+        };
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", attach);
+        } else {
+          attach();
+        }
       })();
     </script>
   </body>
