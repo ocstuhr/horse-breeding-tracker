@@ -121,43 +121,24 @@
               Stallion name
               <input id="stallionNameInput" name="stallionName" type="text" placeholder="Stallion name" required />
             </label>
-            <label>
-              Bred mare
-              <input id="stallionBredMareInput" name="stallionBredMare" type="text" placeholder="Bred mare name" required />
-            </label>
-            <label>
-              Bred mare AQHA number
-              <input id="stallionAQHANumberInput" name="stallionAQHANumber" type="text" placeholder="AQHA number" />
-            </label>
           </div>
-          <button id="saveStallionButton" type="submit" class="primary">Save stallion record</button>
-        </form>
-      </section>
 
-      <section class="panel" id="stallionFormView" style="display: none;">
-        <div class="section-heading">
-          <h2 id="stallionFormHeading">Add stallion breeding record</h2>
-          <button id="goToMainButtonFromStallion" type="button" class="secondary">Go to main page</button>
-        </div>
-        <form id="stallion-form">
-          <div class="form-grid">
-            <label>
-              Breeding year
-              <input id="stallionBreedingYearInput" name="stallionBreedingYear" type="number" min="1900" max="2100" placeholder="2026" />
-            </label>
-            <label>
-              Stallion name
-              <input id="stallionNameInput" name="stallionName" type="text" placeholder="Stallion name" required />
-            </label>
-            <label>
-              Bred mare
-              <input id="stallionBredMareInput" name="stallionBredMare" type="text" placeholder="Bred mare name" required />
-            </label>
-            <label>
-              Bred mare AQHA number
-              <input id="stallionAQHANumberInput" name="stallionAQHANumber" type="text" placeholder="AQHA number" />
-            </label>
+          <div class="shot-section">
+            <div class="section-heading">
+              <h3>Bred mare details</h3>
+            </div>
+            <div class="form-grid">
+              <label>
+                Bred mare
+                <input id="stallionBredMareInput" name="stallionBredMare" type="text" placeholder="Bred mare name" required />
+              </label>
+              <label>
+                Bred mare AQHA number
+                <input id="stallionAQHANumberInput" name="stallionAQHANumber" type="text" placeholder="AQHA number" />
+              </label>
+            </div>
           </div>
+
           <button id="saveStallionButton" type="submit" class="primary">Save stallion record</button>
         </form>
       </section>
