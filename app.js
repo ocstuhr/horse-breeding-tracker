@@ -70,6 +70,37 @@ const shotNameInput = document.getElementById("shotNameInput");
 const notesInput = document.getElementById("notesInput");
 const addShotButton = document.getElementById("addShotButton");
 const shotList = document.getElementById("shotList");
+
+function attachStallionMareHandlers() {
+  const button = document.getElementById("addBredMareButton");
+  if (!button || button.dataset.bound === "true") return;
+
+  button.addEventListener("click", () => {
+    const mareName = bredMareNameInput?.value.trim();
+    if (!mareName) {
+      alert("Please enter a bred mare name before adding it.");
+      return;
+    }
+
+    bredMareEntries = [
+      ...bredMareEntries,
+      {
+        mare: mareName,
+        aqhaNumber: bredMareAQHAInput?.value.trim() || "",
+        coveredFrom: bredMareCoveredFromInput?.value || "",
+        coveredTo: bredMareCoveredToInput?.value || "",
+      },
+    ];
+
+    if (bredMareNameInput) bredMareNameInput.value = "";
+    if (bredMareAQHAInput) bredMareAQHAInput.value = "";
+    if (bredMareCoveredFromInput) bredMareCoveredFromInput.value = "";
+    if (bredMareCoveredToInput) bredMareCoveredToInput.value = "";
+    renderBredMareEntries();
+  });
+
+  button.dataset.bound = "true";
+}
 const recordsList = document.getElementById("recordsList");
 const clearDataButton = document.getElementById("clearDataButton");
 const newRecordButton = document.getElementById("newRecordButton");
@@ -889,29 +920,7 @@ addShotButton.addEventListener("click", () => {
   renderShots();
 });
 
-addBredMareButton.addEventListener("click", () => {
-  const mareName = bredMareNameInput.value.trim();
-  if (!mareName) {
-    alert("Please enter a bred mare name before adding it.");
-    return;
-  }
-
-  bredMareEntries = [
-    ...bredMareEntries,
-    {
-      mare: mareName,
-      aqhaNumber: bredMareAQHAInput.value.trim(),
-      coveredFrom: bredMareCoveredFromInput.value,
-      coveredTo: bredMareCoveredToInput.value,
-    },
-  ];
-
-  bredMareNameInput.value = "";
-  bredMareAQHAInput.value = "";
-  bredMareCoveredFromInput.value = "";
-  bredMareCoveredToInput.value = "";
-  renderBredMareEntries();
-});
+attachStallionMareHandlers();
 
 stallionForm.addEventListener("submit", (event) => {
   event.preventDefault();
