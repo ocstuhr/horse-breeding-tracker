@@ -637,12 +637,7 @@ function renderStallionList() {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "record-card-button";
-    const years = [...new Set(group.entries.map((entry) => entry.breedingYear || "No year entered"))].sort((a, b) => {
-      if (a === "No year entered") return 1;
-      if (b === "No year entered") return -1;
-      return Number(a) - Number(b);
-    });
-    card.innerHTML = `<h3>${group.name}</h3><p>${years.join(", ") || "No breeding years entered"}</p>`;
+    card.innerHTML = `<h3>${group.name}</h3>`;
     card.addEventListener("click", () => openStallionDetail(group.name));
 
     const deleteButton = document.createElement("button");
