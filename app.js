@@ -20,6 +20,7 @@ const shotList = document.getElementById("shotList");
 const recordsList = document.getElementById("recordsList");
 const clearDataButton = document.getElementById("clearDataButton");
 const newRecordButton = document.getElementById("newRecordButton");
+const newStallionButton = document.getElementById("newStallionButton");
 const usernameInput = document.getElementById("usernameInput");
 const passwordInput = document.getElementById("passwordInput");
 const loginButton = document.getElementById("loginButton");
@@ -39,6 +40,7 @@ const detailView = document.getElementById("detailView");
 const formView = document.getElementById("formView");
 const damYearsView = document.getElementById("damYearsView");
 const damList = document.getElementById("damList");
+const stallionList = document.getElementById("stallionList");
 const activeRecordContent = document.getElementById("activeRecordContent");
 const damYearsList = document.getElementById("damYearsList");
 const damYearsHeading = document.getElementById("damYearsHeading");
@@ -53,6 +55,7 @@ let editingRecordId = null;
 let selectedDamName = null;
 let authUser = null;
 let records = loadRecords();
+let stallions = loadStallions();
 
 const API_BASE = (window.__API_BASE__ || "https://horse-breeding-tracker.onrender.com").replace(/\/$/, "");
 const LOCAL_USERS_KEY = "horse-breeding-tracker-local-users";
@@ -158,6 +161,15 @@ function loadRecords() {
 
 function saveLocalRecords() {
   localStorage.setItem("horse-breeding-tracker-records", JSON.stringify(records));
+}
+
+function loadStallions() {
+  const saved = localStorage.getItem("horse-breeding-tracker-stallions");
+  return saved ? JSON.parse(saved) : [];
+}
+
+function saveLocalStallions() {
+  localStorage.setItem("horse-breeding-tracker-stallions", JSON.stringify(stallions));
 }
 
 async function saveRecords() {
@@ -396,6 +408,72 @@ function renderShots() {
     const item = document.createElement("li");
     item.innerHTML = `<strong>${shot.name}</strong><span>${formatDate(shot.date)}</span>`;
     shotList.appendChild(item);
+  });
+}
+
+function renderDamList() {
+  if (records.length === 0) {
+    damList.innerHTML = '<div class="empty-state">No dams yet. Create a new record to begin.</div>';
+  } else {
+    const uniqueDams = [...new Set(records.map((record) => record.dam).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    damList.innerHTML = "";
+
+    uniqueDams.forEach((damName) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "record-card";
+
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "record-card-button";
+      card.innerHTML = `<h3>${damName}</h3>`;
+      card.addEventListener("click", () => openDamYearsView(damName));
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "secondary delete-button";
+      deleteButton.textContent = "Delete";
+      deleteButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        deleteRecordByDam(damName);
+      });
+
+      wrapper.appendChild(card);
+      wrapper.appendChild(deleteButton);
+      damList.appendChild(wrapper);
+    });
+  }
+}
+
+function renderStallionList() {
+  if (stallions.length === 0) {
+    stallionList.innerHTML = '<div class="empty-state">No stallions yet. Create a new stallion record to begin.</div>';
+    return;
+  }
+
+  stallionList.innerHTML = "";
+  stallions.forEach((stallion) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "record-card";
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "record-card-button";
+    card.innerHTML = `<h3>${stallion.name}</h3>`;
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "secondary delete-button";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      stallions = stallions.filter((entry) => entry.id !== stallion.id);
+      saveLocalStallions();
+      renderStallionList();
+    });
+
+    wrapper.appendChild(card);
+    wrapper.appendChild(deleteButton);
+    stallionList.appendChild(wrapper);
   });
 }
 
@@ -755,6 +833,16 @@ newRecordButton.addEventListener("click", (event) => {
   resetFormForNewRecord();
 });
 
+newStallionButton.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  const name = window.prompt("Enter stallion name");
+  if (!name || !name.trim()) return;
+  stallions = [{ id: `stallion-${Date.now()}`, name: name.trim() }, ...stallions];
+  saveLocalStallions();
+  renderStallionList();
+});
+
 goToMainButton.addEventListener("click", () => {
   showMainView();
   resetFormForNewRecord();
@@ -773,6 +861,7 @@ backToDamsButton.addEventListener("click", () => {
 updateFoalingDateDisplay();
 renderShots();
 renderDamList();
+renderStallionList();
 renderDamYearsView();
 renderActiveRecord();
 forceLandingView();
