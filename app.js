@@ -3,6 +3,10 @@ const stallionForm = document.getElementById("stallion-form");
 const breedingYearInput = document.getElementById("breedingYearInput");
 const stallionBreedingYearInput = document.getElementById("stallionBreedingYearInput");
 const stallionNameInput = document.getElementById("stallionNameInput");
+const bredMareNameInput = document.getElementById("bredMareNameInput");
+const bredMareAQHAInput = document.getElementById("bredMareAQHAInput");
+const bredMareCoveredFromInput = document.getElementById("bredMareCoveredFromInput");
+const bredMareCoveredToInput = document.getElementById("bredMareCoveredToInput");
 const bredMareList = document.getElementById("bredMareList");
 const addBredMareButton = document.getElementById("addBredMareButton");
 const sireInput = document.getElementById("sireInput");
@@ -440,6 +444,8 @@ function renderBredMareEntries() {
       <div style="display:flex; flex-direction:column; gap:0.35rem; flex:1;">
         <strong>${entry.mare || "Unnamed mare"}</strong>
         <span>${entry.aqhaNumber ? `AQHA: ${entry.aqhaNumber}` : "No AQHA number"}</span>
+        <span>${entry.coveredFrom ? `Covered from: ${formatDate(entry.coveredFrom)}` : "No covered from date"}</span>
+        <span>${entry.coveredTo ? `Covered to: ${formatDate(entry.coveredTo)}` : "No covered to date"}</span>
       </div>
     `;
 
@@ -840,17 +846,26 @@ addShotButton.addEventListener("click", () => {
 });
 
 addBredMareButton.addEventListener("click", () => {
-  const mareName = window.prompt("Enter bred mare name");
-  if (!mareName || !mareName.trim()) return;
+  const mareName = bredMareNameInput.value.trim();
+  if (!mareName) {
+    alert("Please enter a bred mare name before adding it.");
+    return;
+  }
 
-  const aqhaNumber = window.prompt("Enter AQHA number (optional)");
   bredMareEntries = [
     ...bredMareEntries,
     {
-      mare: mareName.trim(),
-      aqhaNumber: aqhaNumber ? aqhaNumber.trim() : "",
+      mare: mareName,
+      aqhaNumber: bredMareAQHAInput.value.trim(),
+      coveredFrom: bredMareCoveredFromInput.value,
+      coveredTo: bredMareCoveredToInput.value,
     },
   ];
+
+  bredMareNameInput.value = "";
+  bredMareAQHAInput.value = "";
+  bredMareCoveredFromInput.value = "";
+  bredMareCoveredToInput.value = "";
   renderBredMareEntries();
 });
 

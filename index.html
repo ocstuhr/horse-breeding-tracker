@@ -126,9 +126,27 @@
           <div class="shot-section">
             <div class="section-heading">
               <h3>Bred mare details</h3>
-              <button id="addBredMareButton" type="button" class="secondary">Add mare</button>
             </div>
-            <div id="bredMareList" class="shot-list"></div>
+            <div class="form-grid">
+              <label>
+                Bred mare
+                <input id="bredMareNameInput" name="bredMareName" type="text" placeholder="Bred mare name" />
+              </label>
+              <label>
+                AQHA number
+                <input id="bredMareAQHAInput" name="bredMareAQHA" type="text" placeholder="AQHA number" />
+              </label>
+              <label>
+                Covered from
+                <input id="bredMareCoveredFromInput" name="bredMareCoveredFrom" type="date" />
+              </label>
+              <label>
+                Covered to
+                <input id="bredMareCoveredToInput" name="bredMareCoveredTo" type="date" />
+              </label>
+            </div>
+            <button id="addBredMareButton" type="button" class="secondary" style="margin-top: 0.75rem;">Add mare</button>
+            <div id="bredMareList" class="shot-list" style="margin-top: 0.75rem;"></div>
           </div>
 
           <button id="saveStallionButton" type="submit" class="primary">Save stallion record</button>
