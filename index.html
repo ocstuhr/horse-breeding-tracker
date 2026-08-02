@@ -19,17 +19,68 @@
   </head>
   <body>
     <main class="app-shell">
-      <header class="hero">
-        <div>
+      <header class="hero hero-landing">
+        <div class="hero-copy">
           <p class="eyebrow">Equine record keeping</p>
-          <h1>Horse Breeding Tracker</h1>
+          <h1>Keep every breeding season organized.</h1>
           <p class="subtitle">
-            Select a dam to open her record, or add a new breeding record from the main form.
+            Track dams, breeding dates, foaling windows, shots, and notes from one polished workspace designed for busy breeding programs.
           </p>
+          <div class="hero-points">
+            <span>✓ Online sign-in</span>
+            <span>✓ Mobile-friendly views</span>
+            <span>✓ Fast record updates</span>
+          </div>
+        </div>
+        <div class="hero-badge">
+          <strong>Everything in one place</strong>
+          <p>Open a mare’s record, review past breeding years, and add new notes without losing momentum.</p>
         </div>
       </header>
 
-      <section class="panel" id="mainView">
+      <section class="panel auth-panel landing-panel" id="signinPanel">
+        <div class="landing-grid">
+          <div class="landing-copy">
+            <p class="eyebrow">Start here</p>
+            <h2>Sign in to your breeding dashboard</h2>
+            <p class="subtitle">
+              Create an account or use your existing sign-in to access your records, add new breeding entries, and keep every mare in view.
+            </p>
+            <ul class="feature-list">
+              <li>Review breeding history by dam and year</li>
+              <li>Track shot records and notes in the same flow</li>
+              <li>Stay organized from your phone or desktop</li>
+            </ul>
+          </div>
+
+          <div class="landing-form-card">
+            <div class="section-heading">
+              <h3>Access your account</h3>
+              <button id="logoutButton" type="button" class="secondary" hidden>Log out</button>
+            </div>
+            <p id="authStatusText" class="subtitle">Create an account or sign in to save breeding records online.</p>
+            <div id="authForm" class="auth-form-stack">
+              <div class="form-grid">
+                <label>
+                  Username
+                  <input id="usernameInput" name="username" type="text" autocomplete="username" />
+                </label>
+                <label>
+                  Password
+                  <input id="passwordInput" name="password" type="password" autocomplete="current-password" />
+                </label>
+              </div>
+              <div class="auth-actions">
+                <button id="loginButton" type="button" class="primary">Log in</button>
+                <button id="registerButton" type="button" class="secondary">Create account</button>
+              </div>
+              <p id="authMessage" class="auth-message"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="mainView" hidden>
         <div class="section-heading">
           <h2>Dams</h2>
           <button id="newRecordButton" type="button" class="secondary">New record</button>
@@ -169,5 +220,25 @@
     </main>
 
     <script src="app.js"></script>
+    <script>
+      (function forceLandingView() {
+        const signinPanel = document.getElementById("signinPanel");
+        const mainView = document.getElementById("mainView");
+        const detailView = document.getElementById("detailView");
+        const formView = document.getElementById("formView");
+        const damYearsView = document.getElementById("damYearsView");
+
+        if (!signinPanel || !mainView) {
+          return;
+        }
+
+        signinPanel.hidden = false;
+        mainView.hidden = true;
+        if (detailView) detailView.hidden = true;
+        if (formView) formView.hidden = true;
+        if (damYearsView) damYearsView.hidden = true;
+        document.body.classList.add("landing-force-active");
+      })();
+    </script>
   </body>
 </html>

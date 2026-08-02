@@ -20,6 +20,15 @@ const shotList = document.getElementById("shotList");
 const recordsList = document.getElementById("recordsList");
 const clearDataButton = document.getElementById("clearDataButton");
 const newRecordButton = document.getElementById("newRecordButton");
+const usernameInput = document.getElementById("usernameInput");
+const passwordInput = document.getElementById("passwordInput");
+const loginButton = document.getElementById("loginButton");
+const registerButton = document.getElementById("registerButton");
+const logoutButton = document.getElementById("logoutButton");
+const authStatusText = document.getElementById("authStatusText");
+const authForm = document.getElementById("authForm");
+const authMessage = document.getElementById("authMessage");
+const signinPanel = document.getElementById("signinPanel");
 const goToMainButton = document.getElementById("goToMainButton");
 const backToMainButton = document.getElementById("backToMainButton");
 const mainView = document.getElementById("mainView");
@@ -39,6 +48,7 @@ let currentShots = [];
 let selectedRecordId = null;
 let editingRecordId = null;
 let selectedDamName = null;
+let authUser = null;
 let records = loadRecords();
 
 function loadRecords() {
@@ -46,8 +56,150 @@ function loadRecords() {
   return saved ? JSON.parse(saved) : [];
 }
 
-function saveRecords() {
+function saveLocalRecords() {
   localStorage.setItem("horse-breeding-tracker-records", JSON.stringify(records));
+}
+
+async function saveRecords() {
+  saveLocalRecords();
+
+  if (!authUser) {
+    return;
+  }
+
+  try {
+    await fetchJson("/api/records", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(records),
+    });
+  } catch (error) {
+    authMessage.textContent = `Could not sync online: ${error.message}`;
+  }
+}
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    headers: { Accept: "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const payload = contentType.includes("application/json") ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Request failed");
+  }
+
+  return payload;
+}
+
+function setAuthUi(user, message = "") {
+  authUser = user;
+  authMessage.textContent = message;
+  authStatusText.textContent = user ? `Signed in as ${user.username}.` : "Create an account or sign in to save breeding records online.";
+  logoutButton.hidden = !user;
+  authForm.hidden = !!user;
+  signinPanel.hidden = !!user;
+
+  if (user) {
+    showMainView();
+  } else {
+    showAuthView();
+  }
+}
+
+function loadRecordsFromLocalStorage() {
+  const saved = localStorage.getItem("horse-breeding-tracker-records");
+  records = saved ? JSON.parse(saved) : [];
+}
+
+async function loadRecordsFromServer() {
+  try {
+    const payload = await fetchJson("/api/records");
+    records = payload.records || [];
+    saveLocalRecords();
+    renderDamList();
+    renderDamYearsView();
+    renderActiveRecord();
+  } catch (error) {
+    loadRecordsFromLocalStorage();
+    renderDamList();
+    renderDamYearsView();
+    renderActiveRecord();
+    authMessage.textContent = `Could not load online records: ${error.message}`;
+  }
+}
+
+async function initializeAuth() {
+  loadRecordsFromLocalStorage();
+  renderDamList();
+  renderDamYearsView();
+  renderActiveRecord();
+  setAuthUi(null, "");
+}
+
+async function handleLogin() {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!username || !password) {
+    authMessage.textContent = "Please enter both a username and password.";
+    return;
+  }
+
+  try {
+    const payload = await fetchJson("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    setAuthUi(payload.user, "Signed in successfully.");
+    await loadRecordsFromServer();
+    showMainView();
+  } catch (error) {
+    authMessage.textContent = error.message;
+  }
+}
+
+async function handleRegister() {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!username || !password) {
+    authMessage.textContent = "Please enter both a username and password.";
+    return;
+  }
+
+  try {
+    const payload = await fetchJson("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    setAuthUi(payload.user, "Account created successfully.");
+    await loadRecordsFromServer();
+    showMainView();
+  } catch (error) {
+    authMessage.textContent = error.message;
+  }
+}
+
+async function handleLogout() {
+  try {
+    await fetchJson("/api/logout", { method: "POST" });
+  } catch (error) {
+    // Ignore logout failures and still clear the UI.
+  }
+
+  setAuthUi(null, "Signed out.");
+  loadRecordsFromLocalStorage();
+  renderDamList();
+  renderDamYearsView();
+  renderActiveRecord();
 }
 
 function formatDate(value) {
@@ -103,7 +255,7 @@ function renderDamList() {
     return;
   }
 
-  const uniqueDams = [...new Set(records.map((record) => record.dam).filter(Boolean))];
+  const uniqueDams = [...new Set(records.map((record) => record.dam).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   damList.innerHTML = "";
 
   uniqueDams.forEach((damName) => {
@@ -237,11 +389,30 @@ function populateForm(record) {
   updateFoalingDateDisplay();
 }
 
+function showAuthView() {
+  signinPanel.hidden = false;
+  mainView.hidden = true;
+  detailView.hidden = true;
+  formView.hidden = true;
+  damYearsView.hidden = true;
+}
+
 function showMainView() {
+  if (!authUser) {
+    showAuthView();
+    return;
+  }
+
+  signinPanel.hidden = true;
   mainView.hidden = false;
   detailView.hidden = true;
   formView.hidden = true;
   damYearsView.hidden = true;
+}
+
+function forceLandingView() {
+  authUser = null;
+  showAuthView();
 }
 
 function showFormView() {
@@ -398,6 +569,9 @@ function clearAllRecords() {
 
 clearDataButton.addEventListener("click", clearAllRecords);
 clearDataButtonTwo.addEventListener("click", clearAllRecords);
+loginButton.addEventListener("click", handleLogin);
+registerButton.addEventListener("click", handleRegister);
+logoutButton.addEventListener("click", handleLogout);
 
 newRecordButton.addEventListener("click", () => {
   showFormView();
@@ -424,5 +598,6 @@ renderShots();
 renderDamList();
 renderDamYearsView();
 renderActiveRecord();
-showMainView();
+forceLandingView();
 resetFormForNewRecord();
+void initializeAuth();
