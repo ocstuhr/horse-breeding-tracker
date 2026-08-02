@@ -24,7 +24,6 @@ const usernameInput = document.getElementById("usernameInput");
 const passwordInput = document.getElementById("passwordInput");
 const loginButton = document.getElementById("loginButton");
 const registerButton = document.getElementById("registerButton");
-const recoverButton = document.getElementById("recoverButton");
 const recoveryPanel = document.getElementById("recoveryPanel");
 const recoveryList = document.getElementById("recoveryList");
 const logoutButton = document.getElementById("logoutButton");
@@ -746,7 +745,6 @@ clearDataButton.addEventListener("click", clearAllRecords);
 clearDataButtonTwo.addEventListener("click", clearAllRecords);
 loginButton.addEventListener("click", handleLogin);
 registerButton.addEventListener("click", handleRegister);
-if (recoverButton) recoverButton.addEventListener("click", toggleRecoveryPanel);
 if (logoutButton) logoutButton.addEventListener("click", handleLogout);
 if (logoutButtonHero) logoutButtonHero.addEventListener("click", handleLogout);
 
