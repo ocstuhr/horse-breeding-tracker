@@ -95,6 +95,13 @@ class TrackerHandler(BaseHTTPRequestHandler):
 
         self.serve_file("index.html")
 
+    def do_OPTIONS(self):
+        parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/"):
+            self.send_headers(204)
+            return
+        self.send_error(404, "Not found")
+
     def do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path.startswith("/api/"):
@@ -233,6 +240,10 @@ class TrackerHandler(BaseHTTPRequestHandler):
 
     def send_headers(self, status_code: int, extra_headers=None):
         self.send_response(status_code)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Credentials", "true")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
         if extra_headers:
             for name, value in extra_headers:
                 self.send_header(name, value)

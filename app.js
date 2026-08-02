@@ -52,6 +52,12 @@ let selectedDamName = null;
 let authUser = null;
 let records = loadRecords();
 
+const API_BASE = (window.__API_BASE__ || "https://horse-breeding-tracker.onrender.com").replace(/\/$/, "");
+
+function apiUrl(path) {
+  return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 function loadRecords() {
   const saved = localStorage.getItem("horse-breeding-tracker-records");
   return saved ? JSON.parse(saved) : [];
@@ -69,7 +75,7 @@ async function saveRecords() {
   }
 
   try {
-    await fetchJson("/api/records", {
+    await fetchJson(apiUrl("/api/records"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(records),
@@ -81,7 +87,7 @@ async function saveRecords() {
 
 async function fetchJson(url, options = {}) {
   const response = await fetch(url, {
-    credentials: "same-origin",
+    credentials: "include",
     headers: { Accept: "application/json", ...(options.headers || {}) },
     ...options,
   });
@@ -126,7 +132,7 @@ function loadRecordsFromLocalStorage() {
 
 async function loadRecordsFromServer() {
   try {
-    const payload = await fetchJson("/api/records");
+    const payload = await fetchJson(apiUrl("/api/records"));
     records = payload.records || [];
     saveLocalRecords();
     renderDamList();
@@ -159,7 +165,7 @@ async function handleLogin() {
   }
 
   try {
-    const payload = await fetchJson("/api/login", {
+    const payload = await fetchJson(apiUrl("/api/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -183,7 +189,7 @@ async function handleRegister() {
   }
 
   try {
-    const payload = await fetchJson("/api/register", {
+    const payload = await fetchJson(apiUrl("/api/register"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -199,7 +205,7 @@ async function handleRegister() {
 
 async function handleLogout() {
   try {
-    await fetchJson("/api/logout", { method: "POST" });
+    await fetchJson(apiUrl("/api/logout"), { method: "POST" });
   } catch (error) {
     // Ignore logout failures and still clear the UI.
   }
