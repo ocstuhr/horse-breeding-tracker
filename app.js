@@ -105,7 +105,29 @@ function renderRecoveryList() {
   recoveryList.innerHTML = "";
   users.forEach((user) => {
     const item = document.createElement("li");
-    item.innerHTML = `<strong>${user.username}</strong><span>${user.password}</span>`;
+    item.className = "record-card";
+    item.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:0.35rem; flex:1;">
+        <strong>${user.username}</strong>
+        <span>${user.password}</span>
+      </div>
+      <button type="button" class="secondary">Copy</button>
+    `;
+
+    const copyButton = item.querySelector("button");
+    copyButton.addEventListener("click", async () => {
+      const textToCopy = `${user.username}\n${user.password}`;
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        copyButton.textContent = "Copied";
+        setTimeout(() => {
+          copyButton.textContent = "Copy";
+        }, 1500);
+      } catch (error) {
+        copyButton.textContent = "Copy failed";
+      }
+    });
+
     recoveryList.appendChild(item);
   });
 }
