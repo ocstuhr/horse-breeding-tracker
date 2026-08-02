@@ -134,6 +134,34 @@
         </form>
       </section>
 
+      <section class="panel" id="stallionFormView" style="display: none;">
+        <div class="section-heading">
+          <h2 id="stallionFormHeading">Add stallion breeding record</h2>
+          <button id="goToMainButtonFromStallion" type="button" class="secondary">Go to main page</button>
+        </div>
+        <form id="stallion-form">
+          <div class="form-grid">
+            <label>
+              Breeding year
+              <input id="stallionBreedingYearInput" name="stallionBreedingYear" type="number" min="1900" max="2100" placeholder="2026" />
+            </label>
+            <label>
+              Stallion name
+              <input id="stallionNameInput" name="stallionName" type="text" placeholder="Stallion name" required />
+            </label>
+            <label>
+              Bred mare
+              <input id="stallionBredMareInput" name="stallionBredMare" type="text" placeholder="Bred mare name" required />
+            </label>
+            <label>
+              Bred mare AQHA number
+              <input id="stallionAQHANumberInput" name="stallionAQHANumber" type="text" placeholder="AQHA number" />
+            </label>
+          </div>
+          <button id="saveStallionButton" type="submit" class="primary">Save stallion record</button>
+        </form>
+      </section>
+
       <section class="panel" id="detailView" hidden>
         <div class="section-heading">
           <button id="backToMainButton" type="button" class="secondary">← Back to dams</button>
@@ -265,13 +293,14 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260802-3"></script>
+    <script src="app.js?v=20260802-4"></script>
     <script>
       (function forceLandingView() {
         const signinPanel = document.getElementById("signinPanel");
         const mainView = document.getElementById("mainView");
         const detailView = document.getElementById("detailView");
         const formView = document.getElementById("formView");
+        const stallionFormView = document.getElementById("stallionFormView");
         const damYearsView = document.getElementById("damYearsView");
 
         if (!signinPanel || !mainView) {
@@ -282,22 +311,21 @@
         mainView.hidden = true;
         if (detailView) detailView.hidden = true;
         if (formView) formView.hidden = true;
+        if (stallionFormView) stallionFormView.hidden = true;
         if (damYearsView) damYearsView.hidden = true;
         document.body.classList.add("landing-force-active");
       })();
 
-      (function attachFallbackNewRecordHandler() {
-        const button = document.getElementById("newRecordButton");
-        if (!button) return;
+      (function attachFallbackNewRecordHandlers() {
+        const damsButton = document.getElementById("newRecordButton");
+        const stallionButton = document.getElementById("newStallionButton");
 
-        button.addEventListener("click", function (event) {
-          event.preventDefault();
-          event.stopPropagation();
-
+        function showFormPanel(targetPanel) {
           const signinPanel = document.getElementById("signinPanel");
           const mainView = document.getElementById("mainView");
           const detailView = document.getElementById("detailView");
           const formView = document.getElementById("formView");
+          const stallionFormView = document.getElementById("stallionFormView");
           const damYearsView = document.getElementById("damYearsView");
 
           if (document.body) {
@@ -314,16 +342,40 @@
             detailView.style.display = "none";
           }
           if (formView) {
-            formView.hidden = false;
-            formView.style.display = "block";
-            formView.removeAttribute("hidden");
-            formView.scrollIntoView({ behavior: "smooth", block: "start" });
+            formView.hidden = true;
+            formView.style.display = "none";
+          }
+          if (stallionFormView) {
+            stallionFormView.hidden = targetPanel === stallionFormView ? false : true;
+            stallionFormView.style.display = targetPanel === stallionFormView ? "block" : "none";
           }
           if (damYearsView) {
             damYearsView.hidden = true;
             damYearsView.style.display = "none";
           }
-        });
+
+          if (targetPanel) {
+            targetPanel.removeAttribute("hidden");
+            targetPanel.style.display = "block";
+            targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+
+        if (damsButton) {
+          damsButton.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            showFormPanel(document.getElementById("formView"));
+          });
+        }
+
+        if (stallionButton) {
+          stallionButton.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            showFormPanel(document.getElementById("stallionFormView"));
+          });
+        }
       })();
     </script>
   </body>
