@@ -53,6 +53,7 @@ const bredMareCoveredFromInput = document.getElementById("bredMareCoveredFromInp
 const bredMareCoveredToInput = document.getElementById("bredMareCoveredToInput");
 const bredMareList = document.getElementById("bredMareList");
 const addBredMareButton = document.getElementById("addBredMareButton");
+const saveStallionButton = document.getElementById("saveStallionButton");
 const sireInput = document.getElementById("sireInput");
 const damInput = document.getElementById("damInput");
 const breedingDate1Input = document.getElementById("breedingDate1Input");
@@ -931,15 +932,18 @@ addShotButton.addEventListener("click", () => {
 
 attachStallionMareHandlers();
 
-stallionForm.addEventListener("submit", (event) => {
-  event.preventDefault();
+function saveStallionRecord(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
 
-  const breedingYear = stallionBreedingYearInput.value.trim();
-  const stallionName = stallionNameInput.value.trim();
+  const breedingYear = stallionBreedingYearInput?.value.trim() || "";
+  const stallionName = stallionNameInput?.value.trim() || "";
 
   if (!stallionName || bredMareEntries.length === 0) {
     alert("Please complete the stallion name and add at least one bred mare before saving.");
-    return;
+    return false;
   }
 
   const stallionRecord = {
@@ -959,7 +963,16 @@ stallionForm.addEventListener("submit", (event) => {
   renderStallionList();
   resetStallionForm();
   showMainView();
-});
+  return true;
+}
+
+if (stallionForm) {
+  stallionForm.addEventListener("submit", saveStallionRecord);
+}
+
+if (saveStallionButton) {
+  saveStallionButton.addEventListener("click", saveStallionRecord);
+}
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
