@@ -25,6 +25,7 @@ const passwordInput = document.getElementById("passwordInput");
 const loginButton = document.getElementById("loginButton");
 const registerButton = document.getElementById("registerButton");
 const logoutButton = document.getElementById("logoutButton");
+const logoutButtonHero = document.getElementById("logoutButtonHero");
 const authStatusText = document.getElementById("authStatusText");
 const authForm = document.getElementById("authForm");
 const authMessage = document.getElementById("authMessage");
@@ -99,7 +100,15 @@ function setAuthUi(user, message = "") {
   authUser = user;
   authMessage.textContent = message;
   authStatusText.textContent = user ? `Signed in as ${user.username}.` : "Create an account or sign in to save breeding records online.";
-  logoutButton.hidden = !user;
+  const shouldShowLogout = !!user;
+  if (logoutButton) {
+    logoutButton.hidden = !shouldShowLogout;
+    logoutButton.style.display = shouldShowLogout ? "inline-block" : "none";
+  }
+  if (logoutButtonHero) {
+    logoutButtonHero.hidden = !shouldShowLogout;
+    logoutButtonHero.style.display = shouldShowLogout ? "inline-block" : "none";
+  }
   authForm.hidden = !!user;
   signinPanel.hidden = !!user;
 
@@ -389,13 +398,24 @@ function populateForm(record) {
   updateFoalingDateDisplay();
 }
 
+function setPanelVisibility(panel, isVisible) {
+  if (!panel) return;
+  panel.hidden = !isVisible;
+  panel.style.display = isVisible ? "block" : "none";
+  if (isVisible) {
+    panel.removeAttribute("hidden");
+  } else {
+    panel.setAttribute("hidden", "hidden");
+  }
+}
+
 function showAuthView() {
   document.body.classList.add("landing-force-active");
-  signinPanel.hidden = false;
-  mainView.hidden = true;
-  detailView.hidden = true;
-  formView.hidden = true;
-  damYearsView.hidden = true;
+  setPanelVisibility(signinPanel, true);
+  setPanelVisibility(mainView, false);
+  setPanelVisibility(detailView, false);
+  setPanelVisibility(formView, false);
+  setPanelVisibility(damYearsView, false);
 }
 
 function showMainView() {
@@ -405,15 +425,15 @@ function showMainView() {
   }
 
   document.body.classList.remove("landing-force-active");
-  signinPanel.hidden = true;
-  mainView.hidden = false;
-  detailView.hidden = true;
-  formView.hidden = true;
-  damYearsView.hidden = true;
-  mainView.style.display = "block";
-  detailView.style.display = "none";
-  formView.style.display = "none";
-  damYearsView.style.display = "none";
+  setPanelVisibility(signinPanel, false);
+  setPanelVisibility(mainView, true);
+  setPanelVisibility(detailView, false);
+  setPanelVisibility(formView, false);
+  setPanelVisibility(damYearsView, false);
+  if (logoutButtonHero) {
+    logoutButtonHero.hidden = false;
+    logoutButtonHero.style.display = "inline-block";
+  }
 }
 
 function forceLandingView() {
@@ -422,17 +442,24 @@ function forceLandingView() {
 }
 
 function showFormView() {
-  mainView.hidden = true;
-  detailView.hidden = true;
-  formView.hidden = false;
-  damYearsView.hidden = true;
+  document.body.classList.remove("landing-force-active");
+  setPanelVisibility(signinPanel, false);
+  setPanelVisibility(mainView, false);
+  setPanelVisibility(detailView, false);
+  setPanelVisibility(formView, true);
+  setPanelVisibility(damYearsView, false);
+  if (formView) {
+    formView.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function showDamYearsView() {
-  mainView.hidden = true;
-  detailView.hidden = true;
-  formView.hidden = true;
-  damYearsView.hidden = false;
+  document.body.classList.remove("landing-force-active");
+  setPanelVisibility(signinPanel, false);
+  setPanelVisibility(mainView, false);
+  setPanelVisibility(detailView, false);
+  setPanelVisibility(formView, false);
+  setPanelVisibility(damYearsView, true);
 }
 
 function openDamYearsView(damName) {
@@ -577,9 +604,12 @@ clearDataButton.addEventListener("click", clearAllRecords);
 clearDataButtonTwo.addEventListener("click", clearAllRecords);
 loginButton.addEventListener("click", handleLogin);
 registerButton.addEventListener("click", handleRegister);
-logoutButton.addEventListener("click", handleLogout);
+if (logoutButton) logoutButton.addEventListener("click", handleLogout);
+if (logoutButtonHero) logoutButtonHero.addEventListener("click", handleLogout);
 
-newRecordButton.addEventListener("click", () => {
+newRecordButton.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
   showFormView();
   resetFormForNewRecord();
 });
