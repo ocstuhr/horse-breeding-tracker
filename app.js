@@ -3,8 +3,8 @@ const stallionForm = document.getElementById("stallion-form");
 const breedingYearInput = document.getElementById("breedingYearInput");
 const stallionBreedingYearInput = document.getElementById("stallionBreedingYearInput");
 const stallionNameInput = document.getElementById("stallionNameInput");
-const stallionBredMareInput = document.getElementById("stallionBredMareInput");
-const stallionAQHANumberInput = document.getElementById("stallionAQHANumberInput");
+const bredMareList = document.getElementById("bredMareList");
+const addBredMareButton = document.getElementById("addBredMareButton");
 const sireInput = document.getElementById("sireInput");
 const damInput = document.getElementById("damInput");
 const breedingDate1Input = document.getElementById("breedingDate1Input");
@@ -57,6 +57,7 @@ const clearDataButtonTwo = document.getElementById("clearDataButtonTwo");
 const goToMainButtonFromStallion = document.getElementById("goToMainButtonFromStallion");
 
 let currentShots = [];
+let bredMareEntries = [];
 let selectedRecordId = null;
 let editingRecordId = null;
 let selectedDamName = null;
@@ -418,10 +419,49 @@ function renderShots() {
   });
 }
 
+function renderBredMareEntries() {
+  if (!bredMareList) return;
+
+  bredMareList.innerHTML = "";
+
+  if (bredMareEntries.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "empty-state";
+    empty.textContent = "No bred mares added yet.";
+    bredMareList.appendChild(empty);
+    return;
+  }
+
+  bredMareEntries.forEach((entry, index) => {
+    const item = document.createElement("li");
+    item.className = "record-card";
+    item.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:0.35rem; flex:1;">
+        <strong>${entry.mare || "Unnamed mare"}</strong>
+        <span>${entry.aqhaNumber ? `AQHA: ${entry.aqhaNumber}` : "No AQHA number"}</span>
+      </div>
+    `;
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "secondary";
+    removeButton.textContent = "Remove";
+    removeButton.addEventListener("click", () => {
+      bredMareEntries = bredMareEntries.filter((_, itemIndex) => itemIndex !== index);
+      renderBredMareEntries();
+    });
+
+    item.appendChild(removeButton);
+    bredMareList.appendChild(item);
+  });
+}
+
 function resetStallionForm() {
   if (stallionForm) {
     stallionForm.reset();
   }
+  bredMareEntries = [];
+  renderBredMareEntries();
 }
 
 function renderDamList() {
@@ -783,16 +823,29 @@ addShotButton.addEventListener("click", () => {
   renderShots();
 });
 
+addBredMareButton.addEventListener("click", () => {
+  const mareName = window.prompt("Enter bred mare name");
+  if (!mareName || !mareName.trim()) return;
+
+  const aqhaNumber = window.prompt("Enter AQHA number (optional)");
+  bredMareEntries = [
+    ...bredMareEntries,
+    {
+      mare: mareName.trim(),
+      aqhaNumber: aqhaNumber ? aqhaNumber.trim() : "",
+    },
+  ];
+  renderBredMareEntries();
+});
+
 stallionForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const breedingYear = stallionBreedingYearInput.value.trim();
   const stallionName = stallionNameInput.value.trim();
-  const bredMare = stallionBredMareInput.value.trim();
-  const bredMareAQHANumber = stallionAQHANumberInput.value.trim();
 
-  if (!stallionName || !bredMare) {
-    alert("Please complete the stallion name and bred mare before saving.");
+  if (!stallionName || bredMareEntries.length === 0) {
+    alert("Please complete the stallion name and add at least one bred mare before saving.");
     return;
   }
 
@@ -800,8 +853,7 @@ stallionForm.addEventListener("submit", (event) => {
     id: `stallion-${Date.now()}`,
     breedingYear,
     name: stallionName,
-    bredMare,
-    bredMareAQHANumber,
+    bredMares: bredMareEntries,
   };
 
   stallions = [stallionRecord, ...stallions];
@@ -919,6 +971,7 @@ backToDamsButton.addEventListener("click", () => {
 
 updateFoalingDateDisplay();
 renderShots();
+renderBredMareEntries();
 renderDamList();
 renderStallionList();
 renderDamYearsView();
