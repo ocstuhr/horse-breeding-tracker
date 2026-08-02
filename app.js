@@ -24,6 +24,9 @@ const usernameInput = document.getElementById("usernameInput");
 const passwordInput = document.getElementById("passwordInput");
 const loginButton = document.getElementById("loginButton");
 const registerButton = document.getElementById("registerButton");
+const recoverButton = document.getElementById("recoverButton");
+const recoveryPanel = document.getElementById("recoveryPanel");
+const recoveryList = document.getElementById("recoveryList");
 const logoutButton = document.getElementById("logoutButton");
 const logoutButtonHero = document.getElementById("logoutButtonHero");
 const authStatusText = document.getElementById("authStatusText");
@@ -88,6 +91,23 @@ function saveLocalSession(user) {
 
 function clearLocalSession() {
   localStorage.removeItem(LOCAL_SESSION_KEY);
+}
+
+function renderRecoveryList() {
+  if (!recoveryPanel || !recoveryList) return;
+
+  const users = loadLocalUsers();
+  if (!users.length) {
+    recoveryList.innerHTML = '<li class="empty-state">No local accounts saved yet.</li>';
+    return;
+  }
+
+  recoveryList.innerHTML = "";
+  users.forEach((user) => {
+    const item = document.createElement("li");
+    item.innerHTML = `<strong>${user.username}</strong><span>${user.password}</span>`;
+    recoveryList.appendChild(item);
+  });
 }
 
 function createLocalUser(username, password) {
@@ -180,6 +200,15 @@ function setAuthUi(user, message = "") {
 function loadRecordsFromLocalStorage() {
   const saved = localStorage.getItem("horse-breeding-tracker-records");
   records = saved ? JSON.parse(saved) : [];
+}
+
+function toggleRecoveryPanel() {
+  if (!recoveryPanel) return;
+  const isVisible = recoveryPanel.style.display !== "block";
+  recoveryPanel.style.display = isVisible ? "block" : "none";
+  if (isVisible) {
+    renderRecoveryList();
+  }
 }
 
 async function loadRecordsFromServer() {
@@ -695,6 +724,7 @@ clearDataButton.addEventListener("click", clearAllRecords);
 clearDataButtonTwo.addEventListener("click", clearAllRecords);
 loginButton.addEventListener("click", handleLogin);
 registerButton.addEventListener("click", handleRegister);
+if (recoverButton) recoverButton.addEventListener("click", toggleRecoveryPanel);
 if (logoutButton) logoutButton.addEventListener("click", handleLogout);
 if (logoutButtonHero) logoutButtonHero.addEventListener("click", handleLogout);
 
