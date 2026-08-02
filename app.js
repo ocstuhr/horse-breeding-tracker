@@ -59,6 +59,7 @@ const goToMainButtonFromStallion = document.getElementById("goToMainButtonFromSt
 let currentShots = [];
 let bredMareEntries = [];
 let selectedRecordId = null;
+let editingStallionId = null;
 let editingRecordId = null;
 let selectedDamName = null;
 let authUser = null;
@@ -461,6 +462,7 @@ function resetStallionForm() {
     stallionForm.reset();
   }
   bredMareEntries = [];
+  editingStallionId = null;
   renderBredMareEntries();
 }
 
@@ -497,6 +499,19 @@ function renderDamList() {
   }
 }
 
+function populateStallionForm(stallion) {
+  if (!stallion) return;
+
+  stallionBreedingYearInput.value = stallion.breedingYear || "";
+  stallionNameInput.value = stallion.name || "";
+  bredMareEntries = Array.isArray(stallion.bredMares)
+    ? stallion.bredMares.map((entry) => ({ mare: entry.mare || "", aqhaNumber: entry.aqhaNumber || "" }))
+    : [];
+  renderBredMareEntries();
+  editingStallionId = stallion.id;
+  showStallionFormView();
+}
+
 function renderStallionList() {
   if (stallions.length === 0) {
     stallionList.innerHTML = '<div class="empty-state">No stallions yet. Create a new stallion record to begin.</div>';
@@ -512,6 +527,7 @@ function renderStallionList() {
     card.type = "button";
     card.className = "record-card-button";
     card.innerHTML = `<h3>${stallion.name}</h3>`;
+    card.addEventListener("click", () => populateStallionForm(stallion));
 
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
@@ -850,13 +866,18 @@ stallionForm.addEventListener("submit", (event) => {
   }
 
   const stallionRecord = {
-    id: `stallion-${Date.now()}`,
+    id: editingStallionId || `stallion-${Date.now()}`,
     breedingYear,
     name: stallionName,
     bredMares: bredMareEntries,
   };
 
-  stallions = [stallionRecord, ...stallions];
+  if (editingStallionId) {
+    stallions = stallions.map((entry) => (entry.id === editingStallionId ? stallionRecord : entry));
+  } else {
+    stallions = [stallionRecord, ...stallions];
+  }
+
   saveLocalStallions();
   renderStallionList();
   resetStallionForm();
