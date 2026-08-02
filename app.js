@@ -1,5 +1,49 @@
 const form = document.getElementById("breeding-form");
 const stallionForm = document.getElementById("stallion-form");
+
+function ensureStallionMareFields() {
+  if (!stallionForm || document.getElementById("bredMareNameInput")) {
+    return;
+  }
+
+  const section = document.createElement("div");
+  section.className = "shot-section";
+  section.innerHTML = `
+    <div class="section-heading">
+      <h3>Bred mare details</h3>
+    </div>
+    <div class="form-grid">
+      <label>
+        Bred mare
+        <input id="bredMareNameInput" name="bredMareName" type="text" placeholder="Bred mare name" />
+      </label>
+      <label>
+        AQHA number
+        <input id="bredMareAQHAInput" name="bredMareAQHA" type="text" placeholder="AQHA number" />
+      </label>
+      <label>
+        Covered from
+        <input id="bredMareCoveredFromInput" name="bredMareCoveredFrom" type="date" />
+      </label>
+      <label>
+        Covered to
+        <input id="bredMareCoveredToInput" name="bredMareCoveredTo" type="date" />
+      </label>
+    </div>
+    <button id="addBredMareButton" type="button" class="secondary" style="margin-top: 0.75rem;">Add mare</button>
+    <div id="bredMareList" class="shot-list" style="margin-top: 0.75rem;"></div>
+  `;
+
+  const saveButton = document.getElementById("saveStallionButton");
+  if (saveButton) {
+    stallionForm.insertBefore(section, saveButton);
+  } else {
+    stallionForm.appendChild(section);
+  }
+}
+
+ensureStallionMareFields();
+
 const breedingYearInput = document.getElementById("breedingYearInput");
 const stallionBreedingYearInput = document.getElementById("stallionBreedingYearInput");
 const stallionNameInput = document.getElementById("stallionNameInput");
