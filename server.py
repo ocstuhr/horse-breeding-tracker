@@ -10,8 +10,31 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB_PATH = ROOT / "data" / "tracker.db"
-DB_PATH = Path(os.environ.get("DB_PATH", str(DEFAULT_DB_PATH)))
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+
+def resolve_db_path():
+    candidates = []
+    env_db = os.environ.get("DB_PATH")
+    if env_db:
+        candidates.append(Path(env_db))
+    candidates.append(DEFAULT_DB_PATH)
+    candidates.append(Path("/tmp") / "horse-breeding-tracker.db")
+
+    for candidate in candidates:
+        try:
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+            probe = candidate.parent / ".write-test"
+            with probe.open("a", encoding="utf-8"):
+                pass
+            probe.unlink(missing_ok=True)
+            return candidate
+        except (OSError, PermissionError):
+            continue
+
+    return DEFAULT_DB_PATH
+
+
+DB_PATH = resolve_db_path()
 PORT = int(os.environ.get("PORT", "3000"))
 
 
