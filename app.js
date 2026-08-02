@@ -124,9 +124,12 @@ const mainView = document.getElementById("mainView");
 const detailView = document.getElementById("detailView");
 const formView = document.getElementById("formView");
 const stallionFormView = document.getElementById("stallionFormView");
+const stallionDetailView = document.getElementById("stallionDetailView");
 const damYearsView = document.getElementById("damYearsView");
 const damList = document.getElementById("damList");
 const stallionList = document.getElementById("stallionList");
+const stallionDetailContent = document.getElementById("stallionDetailContent");
+const stallionDetailHeading = document.getElementById("stallionDetailHeading");
 const activeRecordContent = document.getElementById("activeRecordContent");
 const damYearsList = document.getElementById("damYearsList");
 const damYearsHeading = document.getElementById("damYearsHeading");
@@ -135,11 +138,13 @@ const submitButton = document.getElementById("submitButton");
 const backToDamsButton = document.getElementById("backToDamsButton");
 const clearDataButtonTwo = document.getElementById("clearDataButtonTwo");
 const goToMainButtonFromStallion = document.getElementById("goToMainButtonFromStallion");
+const backToStallionsButton = document.getElementById("backToStallionsButton");
 
 let currentShots = [];
 let bredMareEntries = [];
 let selectedRecordId = null;
 let editingStallionId = null;
+let selectedStallionName = null;
 let editingRecordId = null;
 let selectedDamName = null;
 let authUser = null;
@@ -609,57 +614,118 @@ function renderStallionList() {
     return;
   }
 
-  const years = [...new Set(stallions.map((stallion) => stallion.breedingYear || "No year entered"))].sort((a, b) => {
+  const groupedStallions = Object.values(
+    stallions.reduce((groups, stallion) => {
+      const rawName = (stallion.name || "Unnamed stallion").trim();
+      const key = rawName.toLowerCase();
+      if (!groups[key]) {
+        groups[key] = {
+          name: rawName || "Unnamed stallion",
+          entries: [],
+        };
+      }
+      groups[key].entries.push(stallion);
+      return groups;
+    }, {})
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  stallionList.innerHTML = "";
+  groupedStallions.forEach((group) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "record-card";
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "record-card-button";
+    const years = [...new Set(group.entries.map((entry) => entry.breedingYear || "No year entered"))].sort((a, b) => {
+      if (a === "No year entered") return 1;
+      if (b === "No year entered") return -1;
+      return Number(a) - Number(b);
+    });
+    card.innerHTML = `<h3>${group.name}</h3><p>${years.join(", ") || "No breeding years entered"}</p>`;
+    card.addEventListener("click", () => openStallionDetail(group.name));
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "secondary delete-button";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      stallions = stallions.filter((entry) => (entry.name || "").trim().toLowerCase() !== group.name.trim().toLowerCase());
+      saveLocalStallions();
+      renderStallionList();
+    });
+
+    wrapper.appendChild(card);
+    wrapper.appendChild(deleteButton);
+    stallionList.appendChild(wrapper);
+  });
+}
+
+function renderStallionDetailView() {
+  if (!stallionDetailContent || !stallionDetailHeading) return;
+
+  if (!selectedStallionName) {
+    stallionDetailContent.innerHTML = '<div class="empty-state">Select a stallion to view details.</div>';
+    return;
+  }
+
+  const groupEntries = stallions.filter((stallion) => (stallion.name || "").trim().toLowerCase() === selectedStallionName.trim().toLowerCase());
+  if (groupEntries.length === 0) {
+    stallionDetailContent.innerHTML = '<div class="empty-state">No stallion records found.</div>';
+    return;
+  }
+
+  stallionDetailHeading.textContent = `${selectedStallionName} breeding years`;
+  stallionDetailContent.innerHTML = "";
+
+  const years = [...new Set(groupEntries.map((entry) => entry.breedingYear || "No year entered"))].sort((a, b) => {
     if (a === "No year entered") return 1;
     if (b === "No year entered") return -1;
     return Number(a) - Number(b);
   });
 
-  stallionList.innerHTML = "";
   years.forEach((year) => {
-    const yearStallions = stallions.filter((stallion) => (stallion.breedingYear || "No year entered") === year);
+    const yearEntries = groupEntries.filter((entry) => (entry.breedingYear || "No year entered") === year);
     const section = document.createElement("div");
     section.className = "shot-section";
 
     const heading = document.createElement("div");
     heading.className = "section-heading";
-    const headingTitle = document.createElement("h3");
-    headingTitle.textContent = year;
-    heading.appendChild(headingTitle);
+    const title = document.createElement("h3");
+    title.textContent = year;
+    heading.appendChild(title);
     section.appendChild(heading);
 
-    const list = document.createElement("div");
-    list.className = "records-list";
+    const entriesList = document.createElement("div");
+    entriesList.className = "records-list";
 
-    yearStallions.forEach((stallion) => {
+    yearEntries.forEach((entry) => {
       const wrapper = document.createElement("div");
       wrapper.className = "record-card";
 
       const card = document.createElement("button");
       card.type = "button";
       card.className = "record-card-button";
-      card.innerHTML = `<h3>${stallion.name}</h3>`;
-      card.addEventListener("click", () => populateStallionForm(stallion));
-
-      const deleteButton = document.createElement("button");
-      deleteButton.type = "button";
-      deleteButton.className = "secondary delete-button";
-      deleteButton.textContent = "Delete";
-      deleteButton.addEventListener("click", (event) => {
-        event.stopPropagation();
-        stallions = stallions.filter((entry) => entry.id !== stallion.id);
-        saveLocalStallions();
-        renderStallionList();
-      });
+      card.innerHTML = `
+        <h3>${entry.name}</h3>
+        <p>${(entry.bredMares || []).length ? `${entry.bredMares.length} bred mare${entry.bredMares.length === 1 ? "" : "s"}` : "No bred mares entered"}</p>
+      `;
+      card.addEventListener("click", () => populateStallionForm(entry));
 
       wrapper.appendChild(card);
-      wrapper.appendChild(deleteButton);
-      list.appendChild(wrapper);
+      entriesList.appendChild(wrapper);
     });
 
-    section.appendChild(list);
-    stallionList.appendChild(section);
+    section.appendChild(entriesList);
+    stallionDetailContent.appendChild(section);
   });
+}
+
+function openStallionDetail(stallionName) {
+  selectedStallionName = stallionName;
+  renderStallionDetailView();
+  showStallionDetailView();
 }
 
 function renderDamList() {
@@ -820,6 +886,7 @@ function showAuthView() {
   setPanelVisibility(detailView, false);
   setPanelVisibility(formView, false);
   setPanelVisibility(stallionFormView, false);
+  setPanelVisibility(stallionDetailView, false);
   setPanelVisibility(damYearsView, false);
 }
 
@@ -835,6 +902,7 @@ function showMainView() {
   setPanelVisibility(detailView, false);
   setPanelVisibility(formView, false);
   setPanelVisibility(stallionFormView, false);
+  setPanelVisibility(stallionDetailView, false);
   setPanelVisibility(damYearsView, false);
   if (logoutButtonHero) {
     logoutButtonHero.hidden = false;
@@ -853,6 +921,7 @@ function showFormView() {
   setPanelVisibility(mainView, false);
   setPanelVisibility(detailView, false);
   setPanelVisibility(formView, true);
+  setPanelVisibility(stallionDetailView, false);
   setPanelVisibility(damYearsView, false);
   if (formView) {
     formView.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -866,9 +935,24 @@ function showStallionFormView() {
   setPanelVisibility(detailView, false);
   setPanelVisibility(formView, false);
   setPanelVisibility(stallionFormView, true);
+  setPanelVisibility(stallionDetailView, false);
   setPanelVisibility(damYearsView, false);
   if (stallionFormView) {
     stallionFormView.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function showStallionDetailView() {
+  document.body.classList.remove("landing-force-active");
+  setPanelVisibility(signinPanel, false);
+  setPanelVisibility(mainView, false);
+  setPanelVisibility(detailView, false);
+  setPanelVisibility(formView, false);
+  setPanelVisibility(stallionFormView, false);
+  setPanelVisibility(stallionDetailView, true);
+  setPanelVisibility(damYearsView, false);
+  if (stallionDetailView) {
+    stallionDetailView.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
@@ -879,6 +963,7 @@ function showDamYearsView() {
   setPanelVisibility(detailView, false);
   setPanelVisibility(formView, false);
   setPanelVisibility(stallionFormView, false);
+  setPanelVisibility(stallionDetailView, false);
   setPanelVisibility(damYearsView, true);
 }
 
@@ -1094,6 +1179,13 @@ goToMainButtonFromStallion.addEventListener("click", () => {
   showMainView();
   resetStallionForm();
 });
+
+if (backToStallionsButton) {
+  backToStallionsButton.addEventListener("click", () => {
+    showMainView();
+    renderStallionList();
+  });
+}
 
 backToMainButton.addEventListener("click", () => {
   showMainView();
