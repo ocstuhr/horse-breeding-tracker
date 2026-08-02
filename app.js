@@ -146,6 +146,10 @@ let records = loadRecords();
 let stallions = loadStallions();
 
 const API_BASE = (window.__API_BASE__ || "https://horse-breeding-tracker.onrender.com").replace(/\/$/, "");
+
+function hasPersistedLocalData() {
+  return Boolean(records.length || stallions.length || loadLocalSession());
+}
 const LOCAL_USERS_KEY = "horse-breeding-tracker-local-users";
 const LOCAL_SESSION_KEY = "horse-breeding-tracker-local-session";
 
@@ -363,6 +367,11 @@ async function initializeAuth() {
   }
 
   setAuthUi(null, "");
+  if (hasPersistedLocalData()) {
+    showMainView();
+  } else {
+    showAuthView();
+  }
 }
 
 async function handleLogin() {
@@ -789,7 +798,7 @@ function showAuthView() {
 }
 
 function showMainView() {
-  if (!authUser) {
+  if (!authUser && !hasPersistedLocalData()) {
     showAuthView();
     return;
   }
