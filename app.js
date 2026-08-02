@@ -609,31 +609,56 @@ function renderStallionList() {
     return;
   }
 
+  const years = [...new Set(stallions.map((stallion) => stallion.breedingYear || "No year entered"))].sort((a, b) => {
+    if (a === "No year entered") return 1;
+    if (b === "No year entered") return -1;
+    return Number(a) - Number(b);
+  });
+
   stallionList.innerHTML = "";
-  stallions.forEach((stallion) => {
-    const wrapper = document.createElement("div");
-    wrapper.className = "record-card";
+  years.forEach((year) => {
+    const yearStallions = stallions.filter((stallion) => (stallion.breedingYear || "No year entered") === year);
+    const section = document.createElement("div");
+    section.className = "shot-section";
 
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "record-card-button";
-    card.innerHTML = `<h3>${stallion.name}</h3>`;
-    card.addEventListener("click", () => populateStallionForm(stallion));
+    const heading = document.createElement("div");
+    heading.className = "section-heading";
+    const headingTitle = document.createElement("h3");
+    headingTitle.textContent = year;
+    heading.appendChild(headingTitle);
+    section.appendChild(heading);
 
-    const deleteButton = document.createElement("button");
-    deleteButton.type = "button";
-    deleteButton.className = "secondary delete-button";
-    deleteButton.textContent = "Delete";
-    deleteButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      stallions = stallions.filter((entry) => entry.id !== stallion.id);
-      saveLocalStallions();
-      renderStallionList();
+    const list = document.createElement("div");
+    list.className = "records-list";
+
+    yearStallions.forEach((stallion) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "record-card";
+
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "record-card-button";
+      card.innerHTML = `<h3>${stallion.name}</h3>`;
+      card.addEventListener("click", () => populateStallionForm(stallion));
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "secondary delete-button";
+      deleteButton.textContent = "Delete";
+      deleteButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        stallions = stallions.filter((entry) => entry.id !== stallion.id);
+        saveLocalStallions();
+        renderStallionList();
+      });
+
+      wrapper.appendChild(card);
+      wrapper.appendChild(deleteButton);
+      list.appendChild(wrapper);
     });
 
-    wrapper.appendChild(card);
-    wrapper.appendChild(deleteButton);
-    stallionList.appendChild(wrapper);
+    section.appendChild(list);
+    stallionList.appendChild(section);
   });
 }
 
