@@ -53,9 +53,61 @@ let authUser = null;
 let records = loadRecords();
 
 const API_BASE = (window.__API_BASE__ || "https://horse-breeding-tracker.onrender.com").replace(/\/$/, "");
+const LOCAL_USERS_KEY = "horse-breeding-tracker-local-users";
+const LOCAL_SESSION_KEY = "horse-breeding-tracker-local-session";
 
 function apiUrl(path) {
   return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function loadLocalUsers() {
+  try {
+    const saved = localStorage.getItem(LOCAL_USERS_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveLocalUsers(users) {
+  localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+}
+
+function loadLocalSession() {
+  try {
+    const saved = localStorage.getItem(LOCAL_SESSION_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveLocalSession(user) {
+  localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(user));
+}
+
+function clearLocalSession() {
+  localStorage.removeItem(LOCAL_SESSION_KEY);
+}
+
+function createLocalUser(username, password) {
+  const users = loadLocalUsers();
+  if (users.some((user) => user.username.toLowerCase() === username.toLowerCase())) {
+    throw new Error("That username is already taken.");
+  }
+  const user = { id: `local-${Date.now()}`, username, password };
+  users.push(user);
+  saveLocalUsers(users);
+  return user;
+}
+
+function loginLocalUser(username, password) {
+  const users = loadLocalUsers();
+  const user = users.find((entry) => entry.username.toLowerCase() === username.toLowerCase());
+  if (!user || user.password !== password) {
+    throw new Error("Invalid username or password.");
+  }
+  return { id: user.id, username: user.username };
 }
 
 function loadRecords() {
@@ -152,6 +204,14 @@ async function initializeAuth() {
   renderDamList();
   renderDamYearsView();
   renderActiveRecord();
+
+  const sessionUser = loadLocalSession();
+  if (sessionUser) {
+    setAuthUi(sessionUser, "Signed in locally.");
+    showMainView();
+    return;
+  }
+
   setAuthUi(null, "");
 }
 
@@ -171,11 +231,23 @@ async function handleLogin() {
       body: JSON.stringify({ username, password }),
     });
 
+    saveLocalSession(payload.user);
     setAuthUi(payload.user, "Signed in successfully.");
     await loadRecordsFromServer();
     showMainView();
   } catch (error) {
-    authMessage.textContent = error.message;
+    try {
+      const localUser = loginLocalUser(username, password);
+      saveLocalSession(localUser);
+      setAuthUi(localUser, "Signed in locally. Online sync is unavailable.");
+      loadRecordsFromLocalStorage();
+      renderDamList();
+      renderDamYearsView();
+      renderActiveRecord();
+      showMainView();
+    } catch (localError) {
+      authMessage.textContent = localError.message || error.message;
+    }
   }
 }
 
@@ -195,11 +267,23 @@ async function handleRegister() {
       body: JSON.stringify({ username, password }),
     });
 
+    saveLocalSession(payload.user);
     setAuthUi(payload.user, "Account created successfully.");
     await loadRecordsFromServer();
     showMainView();
   } catch (error) {
-    authMessage.textContent = error.message;
+    try {
+      const localUser = createLocalUser(username, password);
+      saveLocalSession(localUser);
+      setAuthUi(localUser, "Account created locally. Online sync is unavailable.");
+      loadRecordsFromLocalStorage();
+      renderDamList();
+      renderDamYearsView();
+      renderActiveRecord();
+      showMainView();
+    } catch (localError) {
+      authMessage.textContent = localError.message || error.message;
+    }
   }
 }
 
@@ -210,6 +294,7 @@ async function handleLogout() {
     // Ignore logout failures and still clear the UI.
   }
 
+  clearLocalSession();
   setAuthUi(null, "Signed out.");
   loadRecordsFromLocalStorage();
   renderDamList();
