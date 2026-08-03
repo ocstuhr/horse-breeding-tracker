@@ -131,8 +131,11 @@ app.post("/api/login", (req, res) => {
   }
 
   const user = db.prepare("SELECT id, username, password_hash FROM users WHERE username = ?").get(username.trim());
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-    return res.status(401).json({ error: "Invalid username or password." });
+  if (!user) {
+    return res.status(401).json({ error: "User not found. Please create an account." });
+  }
+  if (!bcrypt.compareSync(password, user.password_hash)) {
+    return res.status(401).json({ error: "Incorrect password." });
   }
 
   req.session.userId = user.id;

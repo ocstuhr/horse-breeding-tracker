@@ -296,8 +296,11 @@ function createLocalUser(username, password) {
 function loginLocalUser(username, password) {
   const users = loadLocalUsers();
   const user = users.find((entry) => entry.username.toLowerCase() === username.toLowerCase());
-  if (!user || user.password !== password) {
-    throw new Error("Invalid username or password.");
+  if (!user) {
+    throw new Error("User not found. Please create an account.");
+  }
+  if (user.password !== password) {
+    throw new Error("Incorrect password.");
   }
   return { id: user.id, username: user.username };
 }
@@ -515,8 +518,9 @@ async function handleLogin() {
       showMainView();
       return;
     } catch (error) {
-      authMessage.textContent = `Online sign-in failed: ${error.message}`;
+      authMessage.textContent = error.message || "User not found. Please create an account.";
     }
+    return;
   }
 
   try {
@@ -531,20 +535,7 @@ async function handleLogin() {
     renderActiveRecord();
     showMainView();
   } catch (localError) {
-    try {
-      const createdUser = createLocalUser(username, password);
-      saveLocalSession(createdUser);
-      setAuthUi(createdUser, "Account created locally. Online sync is unavailable.");
-      loadRecordsFromLocalStorage();
-      stallions = loadStallions();
-      renderDamList();
-      renderStallionList();
-      renderDamYearsView();
-      renderActiveRecord();
-      showMainView();
-    } catch (createError) {
-      authMessage.textContent = createError.message || localError.message;
-    }
+    authMessage.textContent = localError.message || "User not found. Please create an account.";
   }
 }
 
