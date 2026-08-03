@@ -1,3 +1,3 @@
 #!/bin/sh
 set -e
-python server.py
+node server.js
