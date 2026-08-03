@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=20260802-4" />
+    <link rel="stylesheet" href="styles.css?v=20260803-1" />
   </head>
   <body>
     <main class="app-shell">
@@ -153,6 +153,14 @@
         </form>
       </section>
 
+      <section class="panel" id="stallionDetailView" style="display: none;">
+        <div class="section-heading">
+          <button id="backToStallionsButton" type="button" class="secondary">← Back to stallions</button>
+        </div>
+        <h2 id="stallionDetailHeading">Stallion details</h2>
+        <div id="stallionDetailContent" class="records-list"></div>
+      </section>
+
       <section class="panel" id="detailView" hidden>
         <div class="section-heading">
           <button id="backToMainButton" type="button" class="secondary">← Back to dams</button>
@@ -284,90 +292,33 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260802-7"></script>
     <script>
-      (function forceLandingView() {
-        const signinPanel = document.getElementById("signinPanel");
-        const mainView = document.getElementById("mainView");
-        const detailView = document.getElementById("detailView");
-        const formView = document.getElementById("formView");
-        const stallionFormView = document.getElementById("stallionFormView");
-        const damYearsView = document.getElementById("damYearsView");
-
-        if (!signinPanel || !mainView) {
+      (function ensureStallionDetailPanel() {
+        if (document.getElementById("stallionDetailView")) {
           return;
         }
 
-        signinPanel.hidden = false;
-        mainView.hidden = true;
-        if (detailView) detailView.hidden = true;
-        if (formView) formView.hidden = true;
-        if (stallionFormView) stallionFormView.hidden = true;
-        if (damYearsView) damYearsView.hidden = true;
-        document.body.classList.add("landing-force-active");
-      })();
+        const panel = document.createElement("section");
+        panel.className = "panel";
+        panel.id = "stallionDetailView";
+        panel.style.display = "none";
+        panel.innerHTML = `
+          <div class="section-heading">
+            <button id="backToStallionsButton" type="button" class="secondary">← Back to stallions</button>
+          </div>
+          <h2 id="stallionDetailHeading">Stallion details</h2>
+          <div id="stallionDetailContent" class="records-list"></div>
+        `;
 
-      (function attachFallbackNewRecordHandlers() {
-        const damsButton = document.getElementById("newRecordButton");
-        const stallionButton = document.getElementById("newStallionButton");
-
-        function showFormPanel(targetPanel) {
-          const signinPanel = document.getElementById("signinPanel");
-          const mainView = document.getElementById("mainView");
-          const detailView = document.getElementById("detailView");
-          const formView = document.getElementById("formView");
-          const stallionFormView = document.getElementById("stallionFormView");
-          const damYearsView = document.getElementById("damYearsView");
-
-          if (document.body) {
-            document.body.classList.remove("landing-force-active");
-          }
-
-          if (signinPanel) signinPanel.hidden = true;
-          if (mainView) {
-            mainView.hidden = true;
-            mainView.style.display = "none";
-          }
-          if (detailView) {
-            detailView.hidden = true;
-            detailView.style.display = "none";
-          }
-          if (formView) {
-            formView.hidden = true;
-            formView.style.display = "none";
-          }
-          if (stallionFormView) {
-            stallionFormView.hidden = targetPanel === stallionFormView ? false : true;
-            stallionFormView.style.display = targetPanel === stallionFormView ? "block" : "none";
-          }
-          if (damYearsView) {
-            damYearsView.hidden = true;
-            damYearsView.style.display = "none";
-          }
-
-          if (targetPanel) {
-            targetPanel.removeAttribute("hidden");
-            targetPanel.style.display = "block";
-            targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }
-
-        if (damsButton) {
-          damsButton.addEventListener("click", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            showFormPanel(document.getElementById("formView"));
-          });
-        }
-
-        if (stallionButton) {
-          stallionButton.addEventListener("click", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            showFormPanel(document.getElementById("stallionFormView"));
-          });
+        const formView = document.getElementById("formView");
+        const main = document.querySelector("main");
+        if (formView && formView.parentNode) {
+          formView.parentNode.insertBefore(panel, formView.nextSibling);
+        } else if (main) {
+          main.appendChild(panel);
         }
       })();
     </script>
+    <script src="app.js?v=20260803-1"></script>
   </body>
 </html>

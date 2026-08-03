@@ -1,0 +1,15 @@
+{
+  "name": "horse-breeding-tracker",
+  "version": "1.0.0",
+  "description": "Horse breeding tracker with auth and persistence",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.9.0",
+    "better-sqlite3": "^11.1.0",
+    "express": "^4.21.0",
+    "express-session": "^1.20.0"
+  }
+}

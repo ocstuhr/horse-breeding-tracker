@@ -15,6 +15,9 @@ DEFAULT_DB_PATH = ROOT / "data" / "tracker.db"
 def resolve_db_path():
     candidates = []
     env_db = os.environ.get("DB_PATH")
+    env_user_db = os.environ.get("USER_DB_PATH")
+    if env_user_db:
+        candidates.append(Path(env_user_db))
     if env_db:
         candidates.append(Path(env_db))
     candidates.append(DEFAULT_DB_PATH)
@@ -51,11 +54,13 @@ def init_db():
 
         CREATE TABLE IF NOT EXISTS records (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER UNIQUE NOT NULL,
+          user_id INTEGER NOT NULL,
           payload TEXT NOT NULL,
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY(user_id) REFERENCES users(id)
         );
+
+        CREATE INDEX IF NOT EXISTS idx_records_user_id ON records(user_id);
 
         CREATE TABLE IF NOT EXISTS sessions (
           id TEXT PRIMARY KEY,
@@ -185,15 +190,22 @@ class TrackerHandler(BaseHTTPRequestHandler):
             self.send_json(401, {"error": "Please log in first."})
             return
         if self.command == "GET":
-            row = conn.execute("SELECT payload FROM records WHERE user_id = ?", (user_id,)).fetchone()
+            row = conn.execute(
+                "SELECT payload FROM records WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1",
+                (user_id,),
+            ).fetchone()
             records = json.loads(row["payload"]) if row else []
             self.send_json(200, {"records": records})
             return
         if self.command == "POST":
             payload = self.read_json_body()
             conn.execute(
-                "INSERT INTO records (user_id, payload) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET payload = excluded.payload, updated_at = CURRENT_TIMESTAMP",
+                "INSERT INTO records (user_id, payload, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
                 (user_id, json.dumps(payload)),
+            )
+            conn.execute(
+                "DELETE FROM records WHERE user_id = ? AND id NOT IN (SELECT id FROM records WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1)",
+                (user_id, user_id),
             )
             conn.commit()
             self.send_json(200, {"ok": True})
@@ -240,7 +252,12 @@ class TrackerHandler(BaseHTTPRequestHandler):
 
     def send_headers(self, status_code: int, extra_headers=None):
         self.send_response(status_code)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin", "")
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
+        else:
+            self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Credentials", "true")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
@@ -283,6 +300,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
             extra_headers=[
                 ("Content-Type", self.mime_type(path)),
                 ("Content-Length", str(len(content))),
+                ("Cache-Control", "no-store"),
             ],
         )
         self.wfile.write(content)

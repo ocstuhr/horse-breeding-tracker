@@ -124,12 +124,12 @@ const mainView = document.getElementById("mainView");
 const detailView = document.getElementById("detailView");
 const formView = document.getElementById("formView");
 const stallionFormView = document.getElementById("stallionFormView");
-const stallionDetailView = document.getElementById("stallionDetailView");
+let stallionDetailView = document.getElementById("stallionDetailView");
 const damYearsView = document.getElementById("damYearsView");
 const damList = document.getElementById("damList");
 const stallionList = document.getElementById("stallionList");
-const stallionDetailContent = document.getElementById("stallionDetailContent");
-const stallionDetailHeading = document.getElementById("stallionDetailHeading");
+let stallionDetailContent = document.getElementById("stallionDetailContent");
+let stallionDetailHeading = document.getElementById("stallionDetailHeading");
 const activeRecordContent = document.getElementById("activeRecordContent");
 const damYearsList = document.getElementById("damYearsList");
 const damYearsHeading = document.getElementById("damYearsHeading");
@@ -138,7 +138,7 @@ const submitButton = document.getElementById("submitButton");
 const backToDamsButton = document.getElementById("backToDamsButton");
 const clearDataButtonTwo = document.getElementById("clearDataButtonTwo");
 const goToMainButtonFromStallion = document.getElementById("goToMainButtonFromStallion");
-const backToStallionsButton = document.getElementById("backToStallionsButton");
+let backToStallionsButton = document.getElementById("backToStallionsButton");
 
 let currentShots = [];
 let bredMareEntries = [];
@@ -151,7 +151,57 @@ let authUser = null;
 let records = loadRecords();
 let stallions = loadStallions();
 
-const API_BASE = (window.__API_BASE__ || "https://horse-breeding-tracker.onrender.com").replace(/\/$/, "");
+function getApiBase() {
+  if (window.__API_BASE__) {
+    return window.__API_BASE__.replace(/\/$/, "");
+  }
+
+  const hostname = window.location.hostname.toLowerCase();
+  if (window.location.protocol === "file:") {
+    return "https://horse-breeding-tracker.onrender.com";
+  }
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+    return "http://127.0.0.1:3000";
+  }
+  return window.location.origin;
+}
+
+const API_BASE = getApiBase();
+
+function shouldUseOnlineSync() {
+  const hostname = window.location.hostname;
+  return window.location.protocol !== "file:" && hostname !== "localhost" && hostname !== "127.0.0.1" && hostname !== "::1";
+}
+
+function ensureStallionDetailView() {
+  if (stallionDetailView) {
+    return;
+  }
+
+  const placeholder = document.createElement("section");
+  placeholder.className = "panel";
+  placeholder.id = "stallionDetailView";
+  placeholder.style.display = "none";
+  placeholder.innerHTML = `
+    <div class="section-heading">
+      <button id="backToStallionsButton" type="button" class="secondary">← Back to stallions</button>
+    </div>
+    <h2 id="stallionDetailHeading">Stallion details</h2>
+    <div id="stallionDetailContent" class="records-list"></div>
+  `;
+
+  const formViewNode = document.getElementById("formView");
+  if (formViewNode && formViewNode.parentNode) {
+    formViewNode.parentNode.insertBefore(placeholder, formViewNode.nextSibling);
+  } else {
+    document.querySelector("main")?.appendChild(placeholder);
+  }
+
+  stallionDetailView = document.getElementById("stallionDetailView");
+  stallionDetailContent = document.getElementById("stallionDetailContent");
+  stallionDetailHeading = document.getElementById("stallionDetailHeading");
+  backToStallionsButton = document.getElementById("backToStallionsButton");
+}
 
 function hasPersistedLocalData() {
   return Boolean(records.length || stallions.length || loadLocalSession());
@@ -252,28 +302,46 @@ function loginLocalUser(username, password) {
   return { id: user.id, username: user.username };
 }
 
+function getUserStorageKey(prefix) {
+  const user = authUser || loadLocalSession();
+  const userId = user?.id || "guest";
+  return `${prefix}-${userId}`;
+}
+
+function clearUserScopedStorage() {
+  const user = authUser || loadLocalSession();
+  const userId = user?.id || "guest";
+  const keysToRemove = [
+    `horse-breeding-tracker-records-${userId}`,
+    `horse-breeding-tracker-stallions-${userId}`,
+    `horse-breeding-tracker-records-guest`,
+    `horse-breeding-tracker-stallions-guest`,
+  ];
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+}
+
 function loadRecords() {
-  const saved = localStorage.getItem("horse-breeding-tracker-records");
+  const saved = localStorage.getItem(getUserStorageKey("horse-breeding-tracker-records"));
   return saved ? JSON.parse(saved) : [];
 }
 
 function saveLocalRecords() {
-  localStorage.setItem("horse-breeding-tracker-records", JSON.stringify(records));
+  localStorage.setItem(getUserStorageKey("horse-breeding-tracker-records"), JSON.stringify(records));
 }
 
 function loadStallions() {
-  const saved = localStorage.getItem("horse-breeding-tracker-stallions");
+  const saved = localStorage.getItem(getUserStorageKey("horse-breeding-tracker-stallions"));
   return saved ? JSON.parse(saved) : [];
 }
 
 function saveLocalStallions() {
-  localStorage.setItem("horse-breeding-tracker-stallions", JSON.stringify(stallions));
+  localStorage.setItem(getUserStorageKey("horse-breeding-tracker-stallions"), JSON.stringify(stallions));
 }
 
 async function saveRecords() {
   saveLocalRecords();
 
-  if (!authUser) {
+  if (!authUser || !shouldUseOnlineSync()) {
     return;
   }
 
@@ -289,6 +357,10 @@ async function saveRecords() {
 }
 
 async function fetchJson(url, options = {}) {
+  if (!shouldUseOnlineSync()) {
+    throw new Error("Online sync is unavailable on this host.");
+  }
+
   const response = await fetch(url, {
     credentials: "include",
     headers: { Accept: "application/json", ...(options.headers || {}) },
@@ -307,6 +379,18 @@ async function fetchJson(url, options = {}) {
 
 function setAuthUi(user, message = "") {
   authUser = user;
+  if (user) {
+    clearUserScopedStorage();
+    records = loadRecords();
+    stallions = loadStallions();
+    renderDamList();
+    renderStallionList();
+    renderDamYearsView();
+    renderActiveRecord();
+  } else {
+    records = [];
+    stallions = [];
+  }
   authMessage.textContent = message;
   authStatusText.textContent = user ? `Signed in as ${user.username}.` : "Create an account or sign in to save breeding records online.";
   const shouldShowLogout = !!user;
@@ -321,15 +405,11 @@ function setAuthUi(user, message = "") {
   authForm.hidden = !!user;
   signinPanel.hidden = !!user;
 
-  if (user) {
-    showMainView();
-  } else {
-    showAuthView();
-  }
+  showMainView();
 }
 
 function loadRecordsFromLocalStorage() {
-  const saved = localStorage.getItem("horse-breeding-tracker-records");
+  const saved = localStorage.getItem(getUserStorageKey("horse-breeding-tracker-records"));
   records = saved ? JSON.parse(saved) : [];
 }
 
@@ -343,6 +423,14 @@ function toggleRecoveryPanel() {
 }
 
 async function loadRecordsFromServer() {
+  if (!shouldUseOnlineSync()) {
+    loadRecordsFromLocalStorage();
+    renderDamList();
+    renderDamYearsView();
+    renderActiveRecord();
+    return;
+  }
+
   try {
     const payload = await fetchJson(apiUrl("/api/records"));
     records = payload.records || [];
@@ -389,29 +477,49 @@ async function handleLogin() {
     return;
   }
 
-  try {
-    const payload = await fetchJson(apiUrl("/api/login"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-
-    saveLocalSession(payload.user);
-    setAuthUi(payload.user, "Signed in successfully.");
-    await loadRecordsFromServer();
-    showMainView();
-  } catch (error) {
+  if (shouldUseOnlineSync()) {
     try {
-      const localUser = loginLocalUser(username, password);
-      saveLocalSession(localUser);
-      setAuthUi(localUser, "Signed in locally. Online sync is unavailable.");
+      const payload = await fetchJson(apiUrl("/api/login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      saveLocalSession(payload.user);
+      setAuthUi(payload.user, "Signed in successfully.");
+      await loadRecordsFromServer();
+      showMainView();
+      return;
+    } catch (error) {
+      authMessage.textContent = `Online sign-in failed: ${error.message}`;
+    }
+  }
+
+  try {
+    const localUser = loginLocalUser(username, password);
+    saveLocalSession(localUser);
+    setAuthUi(localUser, "Signed in locally. Online sync is unavailable.");
+    loadRecordsFromLocalStorage();
+    stallions = loadStallions();
+    renderDamList();
+    renderStallionList();
+    renderDamYearsView();
+    renderActiveRecord();
+    showMainView();
+  } catch (localError) {
+    try {
+      const createdUser = createLocalUser(username, password);
+      saveLocalSession(createdUser);
+      setAuthUi(createdUser, "Account created locally. Online sync is unavailable.");
       loadRecordsFromLocalStorage();
+      stallions = loadStallions();
       renderDamList();
+      renderStallionList();
       renderDamYearsView();
       renderActiveRecord();
       showMainView();
-    } catch (localError) {
-      authMessage.textContent = localError.message || error.message;
+    } catch (createError) {
+      authMessage.textContent = createError.message || localError.message;
     }
   }
 }
@@ -425,44 +533,55 @@ async function handleRegister() {
     return;
   }
 
-  try {
-    const payload = await fetchJson(apiUrl("/api/register"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-
-    saveLocalSession(payload.user);
-    setAuthUi(payload.user, "Account created successfully.");
-    await loadRecordsFromServer();
-    showMainView();
-  } catch (error) {
+  if (shouldUseOnlineSync()) {
     try {
-      const localUser = createLocalUser(username, password);
-      saveLocalSession(localUser);
-      setAuthUi(localUser, "Account created locally. Online sync is unavailable.");
-      loadRecordsFromLocalStorage();
-      renderDamList();
-      renderDamYearsView();
-      renderActiveRecord();
+      const payload = await fetchJson(apiUrl("/api/register"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      saveLocalSession(payload.user);
+      setAuthUi(payload.user, "Account created successfully.");
+      await loadRecordsFromServer();
       showMainView();
-    } catch (localError) {
-      authMessage.textContent = localError.message || error.message;
+      return;
+    } catch (error) {
+      authMessage.textContent = `Online registration failed: ${error.message}`;
     }
+  }
+
+  try {
+    const localUser = createLocalUser(username, password);
+    saveLocalSession(localUser);
+    setAuthUi(localUser, "Account created locally. Online sync is unavailable.");
+    loadRecordsFromLocalStorage();
+    stallions = loadStallions();
+    renderDamList();
+    renderStallionList();
+    renderDamYearsView();
+    renderActiveRecord();
+    showMainView();
+  } catch (localError) {
+    authMessage.textContent = localError.message;
   }
 }
 
 async function handleLogout() {
-  try {
-    await fetchJson(apiUrl("/api/logout"), { method: "POST" });
-  } catch (error) {
-    // Ignore logout failures and still clear the UI.
+  if (shouldUseOnlineSync()) {
+    try {
+      await fetchJson(apiUrl("/api/logout"), { method: "POST" });
+    } catch (error) {
+      // Ignore logout failures and still clear the UI.
+    }
   }
 
   clearLocalSession();
   setAuthUi(null, "Signed out.");
   loadRecordsFromLocalStorage();
+  stallions = loadStallions();
   renderDamList();
+  renderStallionList();
   renderDamYearsView();
   renderActiveRecord();
 }
@@ -886,11 +1005,6 @@ function showAuthView() {
 }
 
 function showMainView() {
-  if (!authUser && !hasPersistedLocalData()) {
-    showAuthView();
-    return;
-  }
-
   document.body.classList.remove("landing-force-active");
   setPanelVisibility(signinPanel, false);
   setPanelVisibility(mainView, true);
@@ -899,6 +1013,7 @@ function showMainView() {
   setPanelVisibility(stallionFormView, false);
   setPanelVisibility(stallionDetailView, false);
   setPanelVisibility(damYearsView, false);
+  renderStallionList();
   if (logoutButtonHero) {
     logoutButtonHero.hidden = false;
     logoutButtonHero.style.display = "inline-block";
@@ -907,7 +1022,7 @@ function showMainView() {
 
 function forceLandingView() {
   authUser = null;
-  showAuthView();
+  showMainView();
 }
 
 function showFormView() {
@@ -1035,6 +1150,7 @@ addShotButton.addEventListener("click", () => {
   renderShots();
 });
 
+ensureStallionDetailView();
 attachStallionMareHandlers();
 
 function saveStallionRecord(event) {
