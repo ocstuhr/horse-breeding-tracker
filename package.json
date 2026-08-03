@@ -7,9 +7,9 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "bcryptjs": "^2.9.0",
+    "bcryptjs": "2.4.3",
     "better-sqlite3": "^11.1.0",
     "express": "^4.21.0",
-    "express-session": "^1.20.0"
+    "express-session": "^1.19.0"
   }
 }
