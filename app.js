@@ -309,48 +309,60 @@ function getUserStorageKey(prefix) {
 }
 
 function clearUserScopedStorage() {
-  const user = authUser || loadLocalSession();
-  const userId = user?.id || "guest";
   const keysToRemove = [
-    `horse-breeding-tracker-records-${userId}`,
-    `horse-breeding-tracker-stallions-${userId}`,
-    `horse-breeding-tracker-records-guest`,
-    `horse-breeding-tracker-stallions-guest`,
+    "horse-breeding-tracker-records-guest",
+    "horse-breeding-tracker-stallions-guest",
   ];
   keysToRemove.forEach((key) => localStorage.removeItem(key));
 }
 
+function getActiveUserId() {
+  return authUser?.id || loadLocalSession()?.id || "guest";
+}
+
 function loadRecords() {
-  const saved = localStorage.getItem(getUserStorageKey("horse-breeding-tracker-records"));
+  const key = getUserStorageKey("horse-breeding-tracker-records");
+  const saved = localStorage.getItem(key);
   return saved ? JSON.parse(saved) : [];
 }
 
 function saveLocalRecords() {
-  localStorage.setItem(getUserStorageKey("horse-breeding-tracker-records"), JSON.stringify(records));
+  const key = getUserStorageKey("horse-breeding-tracker-records");
+  localStorage.setItem(key, JSON.stringify(records));
 }
 
 function loadStallions() {
-  const saved = localStorage.getItem(getUserStorageKey("horse-breeding-tracker-stallions"));
+  const key = getUserStorageKey("horse-breeding-tracker-stallions");
+  const saved = localStorage.getItem(key);
   return saved ? JSON.parse(saved) : [];
 }
 
 function saveLocalStallions() {
-  localStorage.setItem(getUserStorageKey("horse-breeding-tracker-stallions"), JSON.stringify(stallions));
+  const key = getUserStorageKey("horse-breeding-tracker-stallions");
+  localStorage.setItem(key, JSON.stringify(stallions));
 }
 
 async function saveRecords() {
   saveLocalRecords();
+  saveLocalStallions();
 
   if (!authUser || !shouldUseOnlineSync()) {
     return;
   }
 
   try {
-    await fetchJson(apiUrl("/api/records"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(records),
-    });
+    await Promise.all([
+      fetchJson(apiUrl("/api/records"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(records),
+      }),
+      fetchJson(apiUrl("/api/stallions"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(stallions),
+      }),
+    ]);
   } catch (error) {
     authMessage.textContent = `Could not sync online: ${error.message}`;
   }
@@ -387,9 +399,16 @@ function setAuthUi(user, message = "") {
     renderStallionList();
     renderDamYearsView();
     renderActiveRecord();
+    showMainView();
   } else {
-    records = [];
-    stallions = [];
+    selectedDamName = null;
+    selectedRecordId = null;
+    selectedStallionName = null;
+    editingRecordId = null;
+    editingStallionId = null;
+    currentShots = [];
+    bredMareEntries = [];
+    showAuthView();
   }
   authMessage.textContent = message;
   authStatusText.textContent = user ? `Signed in as ${user.username}.` : "Create an account or sign in to save breeding records online.";
@@ -402,10 +421,7 @@ function setAuthUi(user, message = "") {
     logoutButtonHero.hidden = !shouldShowLogout;
     logoutButtonHero.style.display = shouldShowLogout ? "inline-block" : "none";
   }
-  authForm.hidden = !!user;
-  signinPanel.hidden = !!user;
-
-  showMainView();
+  updateAuthVisibility(user);
 }
 
 function loadRecordsFromLocalStorage() {
@@ -432,15 +448,23 @@ async function loadRecordsFromServer() {
   }
 
   try {
-    const payload = await fetchJson(apiUrl("/api/records"));
-    records = payload.records || [];
+    const [recordsPayload, stallionsPayload] = await Promise.all([
+      fetchJson(apiUrl("/api/records")),
+      fetchJson(apiUrl("/api/stallions")),
+    ]);
+
+    records = recordsPayload.records || [];
+    stallions = stallionsPayload.stallions || [];
     saveLocalRecords();
+    saveLocalStallions();
     renderDamList();
+    renderStallionList();
     renderDamYearsView();
     renderActiveRecord();
   } catch (error) {
     loadRecordsFromLocalStorage();
     renderDamList();
+    renderStallionList();
     renderDamYearsView();
     renderActiveRecord();
     authMessage.textContent = `Could not load online records: ${error.message}`;
@@ -577,9 +601,27 @@ async function handleLogout() {
   }
 
   clearLocalSession();
+  authUser = null;
+  selectedDamName = null;
+  selectedRecordId = null;
+  selectedStallionName = null;
+  editingRecordId = null;
+  editingStallionId = null;
   setAuthUi(null, "Signed out.");
-  loadRecordsFromLocalStorage();
-  stallions = loadStallions();
+  showAuthView();
+  updateAuthVisibility(null);
+  authMessage.textContent = "Signed out.";
+  authStatusText.textContent = "Create an account or sign in to save breeding records online.";
+  authForm.hidden = false;
+  signinPanel.hidden = false;
+  if (logoutButton) {
+    logoutButton.hidden = true;
+    logoutButton.style.display = "none";
+  }
+  if (logoutButtonHero) {
+    logoutButtonHero.hidden = true;
+    logoutButtonHero.style.display = "none";
+  }
   renderDamList();
   renderStallionList();
   renderDamYearsView();
@@ -1002,6 +1044,30 @@ function showAuthView() {
   setPanelVisibility(stallionFormView, false);
   setPanelVisibility(stallionDetailView, false);
   setPanelVisibility(damYearsView, false);
+  selectedDamName = null;
+  selectedRecordId = null;
+  selectedStallionName = null;
+  editingRecordId = null;
+  editingStallionId = null;
+  currentShots = [];
+  bredMareEntries = [];
+  if (signinPanel) {
+    signinPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function updateAuthVisibility(user) {
+  const shouldShowAuth = !user;
+  authForm.hidden = !shouldShowAuth;
+  signinPanel.hidden = !shouldShowAuth;
+  if (logoutButton) {
+    logoutButton.hidden = !shouldShowAuth;
+    logoutButton.style.display = shouldShowAuth ? "none" : "inline-block";
+  }
+  if (logoutButtonHero) {
+    logoutButtonHero.hidden = !shouldShowAuth;
+    logoutButtonHero.style.display = shouldShowAuth ? "none" : "inline-block";
+  }
 }
 
 function showMainView() {
@@ -1181,6 +1247,7 @@ function saveStallionRecord(event) {
   }
 
   saveLocalStallions();
+  void saveRecords();
   renderStallionList();
   resetStallionForm();
   showMainView();
@@ -1238,7 +1305,7 @@ form.addEventListener("submit", (event) => {
     records = [recordData, ...records];
   }
 
-  saveRecords();
+  void saveRecords();
   renderDamList();
   renderActiveRecord();
   showMainView();
@@ -1266,6 +1333,21 @@ loginButton.addEventListener("click", handleLogin);
 registerButton.addEventListener("click", handleRegister);
 if (logoutButton) logoutButton.addEventListener("click", handleLogout);
 if (logoutButtonHero) logoutButtonHero.addEventListener("click", handleLogout);
+
+document.addEventListener("click", (event) => {
+  const logoutTrigger = event.target instanceof Element ? event.target.closest('[data-action="logout"]') : null;
+  if (!logoutTrigger) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  void handleLogout();
+});
+
+function initApp() {
+  initializeAuth();
+}
+
+document.addEventListener("DOMContentLoaded", initApp);
 
 newRecordButton.addEventListener("click", (event) => {
   event.preventDefault();

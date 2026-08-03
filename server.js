@@ -21,6 +21,9 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Accept");
+  res.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.header("Pragma", "no-cache");
+  res.header("Expires", "0");
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
@@ -49,13 +52,25 @@ db.exec(`
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
 
+  CREATE TABLE IF NOT EXISTS stallions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    payload TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
+
   CREATE UNIQUE INDEX IF NOT EXISTS idx_records_user_id ON records(user_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_stallions_user_id ON stallions(user_id);
 `);
 
 app.use(express.json());
 app.use((req, res, next) => {
-  if (req.path === "/" || req.path === "/index.html" || req.path.endsWith(".html") || req.path.endsWith(".js") || req.path.endsWith(".css")) {
-    res.setHeader("Cache-Control", "no-store");
+  const isAsset = req.path === "/" || req.path === "/index.html" || req.path.endsWith(".html") || req.path.endsWith(".js") || req.path.endsWith(".css");
+  if (isAsset) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
   }
   next();
 });
@@ -141,7 +156,24 @@ app.post("/api/records", requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/api/stallions", requireAuth, (req, res) => {
+  const row = db.prepare("SELECT payload FROM stallions WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1").get(req.session.userId);
+  const stallions = row ? JSON.parse(row.payload) : [];
+  res.json({ stallions });
+});
+
+app.post("/api/stallions", requireAuth, (req, res) => {
+  const payload = JSON.stringify(req.body || []);
+  db.prepare("INSERT INTO stallions (user_id, payload, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(user_id) DO UPDATE SET payload = excluded.payload, updated_at = CURRENT_TIMESTAMP")
+    .run(req.session.userId, payload);
+  res.json({ ok: true });
+});
+
 app.get("*", (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("X-App-Version", "20260803-7");
   res.sendFile(path.join(__dirname, "index.html"));
 });
 

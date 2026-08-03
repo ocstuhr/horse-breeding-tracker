@@ -15,7 +15,8 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=20260803-1" />
+    <link rel="stylesheet" href="styles.css?v=20260803-7" />
+    <script src="app.js?v=20260803-7" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -36,7 +37,7 @@
           <strong>Everything in one place</strong>
           <p>Open a mare’s record, review past breeding years, and add new notes without losing momentum.</p>
           <div class="auth-actions" style="margin-top: 0.85rem;">
-            <button id="logoutButtonHero" type="button" class="secondary" hidden>Log out</button>
+            <button id="logoutButtonHero" type="button" class="secondary" hidden data-action="logout">Log out</button>
           </div>
         </div>
       </header>
@@ -59,7 +60,7 @@
           <div class="landing-form-card">
             <div class="section-heading">
               <h3>Access your account</h3>
-              <button id="logoutButton" type="button" class="secondary" hidden>Log out</button>
+              <button id="logoutButton" type="button" class="secondary" hidden data-action="logout">Log out</button>
             </div>
             <p id="authStatusText" class="subtitle">Create an account or sign in to save breeding records online.</p>
             <div id="authForm" class="auth-form-stack">
